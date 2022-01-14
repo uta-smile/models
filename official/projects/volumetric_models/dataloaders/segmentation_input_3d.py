@@ -19,9 +19,6 @@ import tensorflow as tf
 from official.vision.beta.dataloaders import decoder
 from official.vision.beta.dataloaders import parser
 
-import numpy as np
-from skimage.transform import resize
-
 from tfda.transforms.spatial_transforms import SpatialTransform, MirrorTransform
 from tfda.transforms.noise_transforms import GaussianNoiseTransform, GaussianBlurTransform
 from tfda.transforms.color_transforms import BrightnessMultiplicativeTransform, ContrastAugmentationTransform, GammaTransform
@@ -29,7 +26,7 @@ from tfda.transforms.custom_transforms import MaskTransform, OneHotTransform
 from tfda.transforms.utility_transforms import RemoveLabelTransform
 from tfda.transforms.resample_transforms import SimulateLowResolutionTransform
 from tfda.defs import TFDAData, nan
-from tfda.augmentations.utils import to_one_hot
+
 
 class Decoder(decoder.Decoder):
   """A tf.Example decoder for segmentation task."""
@@ -41,12 +38,8 @@ class Decoder(decoder.Decoder):
               label_shape_key: str = 'label_shape'
               ):
     self._keys_to_features = {
-        # image_field_key: tf.io.FixedLenFeature([], tf.string, default_value=''),
-        # label_field_key: tf.io.FixedLenFeature([], tf.string, default_value=''),
         image_field_key: tf.io.VarLenFeature(dtype=tf.float32),
         label_field_key: tf.io.VarLenFeature(dtype=tf.int64),
-        # image_field_key: tf.io.VarLenFeature(tf.string),
-        # label_field_key: tf.io.VarLenFeature(tf.string),
         image_shape_key: tf.io.FixedLenFeature([4], tf.int64),
         label_shape_key: tf.io.FixedLenFeature([3], tf.int64)
     }
@@ -61,7 +54,6 @@ class Parser(parser.Parser):
 
   def __init__(self,
               input_size: Sequence[int] = [40, 56, 40],
-              # input_size: Sequence[int] = [128, 128, 128],
               num_classes: int = 3,
               num_channels: int = 1,
               image_field_key: str = 'image/encoded',
@@ -116,7 +108,6 @@ class Parser(parser.Parser):
                                          Any]) -> Tuple[tf.Tensor, tf.Tensor]:
     """Parses data for training and evaluation."""
     image, labels = self._prepare_image_and_label_tr(data)
-    # print("parsing tr:", image.shape.as_list(), labels.shape.as_list())
 
     # Cast image as self._dtype
     image = tf.cast(image, dtype=self._dtype)
@@ -127,8 +118,6 @@ class Parser(parser.Parser):
                                         Any]) -> Tuple[tf.Tensor, tf.Tensor]:
     """Parses data for training and evaluation."""
     image, labels = self._prepare_image_and_label_val(data)
-    # print("parsing val:", image.shape.as_list(), labels.shape.as_list())
-
 
     # Cast image as self._dtype
     image = tf.cast(image, dtype=self._dtype)
@@ -141,38 +130,22 @@ class Parser(parser.Parser):
     image = data[self._image_field_key]
     if isinstance(image, tf.SparseTensor):
       image = tf.sparse.to_dense(image)
-    # print(image)  # Tensor("SparseToDense:0", shape=(None,), dtype=float32)
-    # print(type(image))  # <class 'tensorflow.python.framework.ops.Tensor'>
 
     label = data[self._label_field_key]
     if isinstance(label, tf.SparseTensor):
       label = tf.sparse.to_dense(label)
-    # print(label)
-    # print(type(label))
 
     image_size = data[self._image_shape_key]
-    # print("image_size:", image_size)  # Tensor("args_2:0", shape=(4,), dtype=int64)
-    # print(type(image_size))  # <class 'tensorflow.python.framework.ops.Tensor'>
     image = tf.reshape(image, image_size)
-    # print("before py_func:", image)  # Tensor("Reshape:0", shape=(None, None, None, None), dtype=float32)
-    # print(type(image))  # <class 'tensorflow.python.framework.ops.Tensor'>
 
     label_size = data[self._label_shape_key]
-    # print(label_size)
-    # print(type(label_size))
     label = tf.reshape(label, label_size)
-    # print(label)
-    # print(type(label))
     label = tf.cast(label, dtype=tf.float32)
 
-    # image, label = tf.py_function(func=self._data_augmentation_tr, inp=[image, label], Tout=(tf.float32, tf.float32))
     image, label = self._data_augmentation_tr(image, label)
-
 
     image.set_shape(self._input_size+[self._num_channels])
     label.set_shape(self._input_size+[self._num_classes])
-    # # print("after set_shape:", image)  # Tensor("EagerPyFunc:0", shape=(40, 56, 40, 1), dtype=float32, device=/job:localhost/replica:0/task:0)
-    # # print("after set_shape:", type(image))  # <class 'tensorflow.python.framework.ops.Tensor'>
 
     image = tf.cast(image, dtype=self._dtype)
     label = tf.cast(label, dtype=self._label_dtype)
@@ -188,38 +161,22 @@ class Parser(parser.Parser):
     image = data[self._image_field_key]
     if isinstance(image, tf.SparseTensor):
       image = tf.sparse.to_dense(image)
-    # print(image)  # Tensor("SparseToDense:0", shape=(None,), dtype=float32)
-    # print(type(image))  # <class 'tensorflow.python.framework.ops.Tensor'>
 
     label = data[self._label_field_key]
     if isinstance(label, tf.SparseTensor):
       label = tf.sparse.to_dense(label)
-    # print(label)
-    # print(type(label))
 
     image_size = data[self._image_shape_key]
-    # print("image_size:", image_size)  # Tensor("args_2:0", shape=(4,), dtype=int64)
-    # print(type(image_size))  # <class 'tensorflow.python.framework.ops.Tensor'>
     image = tf.reshape(image, image_size)
-    # print("before py_func:", image)  # Tensor("Reshape:0", shape=(None, None, None, None), dtype=float32)
-    # print(type(image))  # <class 'tensorflow.python.framework.ops.Tensor'>
 
     label_size = data[self._label_shape_key]
-    # print(label_size)
-    # print(type(label_size))
     label = tf.reshape(label, label_size)
-    # print(label)
-    # print(type(label))
     label = tf.cast(label, dtype=tf.float32)
 
-    # image, label = tf.py_function(func=self._data_augmentation_val, inp=[image, label], Tout=(tf.float32, tf.float32))
     image, label = self._data_augmentation_val(image, label)
-
 
     image.set_shape(self._input_size+[self._num_channels])
     label.set_shape(self._input_size+[self._num_classes])
-    # # print("after set_shape:", image)  # Tensor("EagerPyFunc:0", shape=(40, 56, 40, 1), dtype=float32, device=/job:localhost/replica:0/task:0)
-    # # print("after set_shape:", type(image))  # <class 'tensorflow.python.framework.ops.Tensor'>
 
     image = tf.cast(image, dtype=self._dtype)
     label = tf.cast(label, dtype=self._label_dtype)
@@ -230,88 +187,19 @@ class Parser(parser.Parser):
     return image, label
 
   def _data_augmentation_tr(self, image, label):
-    # image = image.numpy()
-    # label = label.numpy()
-    # label = label[np.newaxis, :]
-    # # print("1", image.shape, label.shape)  # (1, 35, 51, 35) (1, 35, 51, 35)
-    # data = np.concatenate((image, label), axis=0)
-    # # print("2", data.shape)  # (2, 35, 51, 35)
-    # data_dict = DataLoader3D(data, patch_size=[73, 80, 64], final_patch_size=[40, 56, 40], batch_size=1,
-    #                      has_prev_stage=False, pad_mode="constant", pad_sides=None,
-    #                      memmap_mode='r').generate_train_batch()
-    # print("3", data_dict['data'].shape, data_dict['seg'].shape)  # (1, 1, 73, 80, 64) (1, 1, 73, 80, 64)
-    # image = data_dict['data']
-    # label = data_dict['seg']
     image, label = process_batch(image, label[tf.newaxis,], tf.constant([73, 80, 64]), tf.constant([40, 56, 40]))
-    # image, label = tf.convert_to_tensor(image), tf.convert_to_tensor(label)
     image, label = tf_tr_transforms(image, label)
-    # tf.print(tf.shape(image), tf.shape(label))
     return image[0], label[0]
-    # image, label = tr_transforms(image, label)
-    # print("4", image.shape, label.shape)  # (1, 1, 40, 56, 40) (1, 1, 40, 56, 40)
-    # image = np.squeeze(image, 0)
-    # label = np.squeeze(label, 0)
-    # label = np.squeeze(label, 0)
-    # # print("5", image.shape, label.shape)  # (1, 40, 56, 40) (40, 56, 40)
-    # label = self._to_one_hot(label)
-    # image = np.moveaxis(image, 0, -1)
-    # label = np.moveaxis(label, 0, -1)
-    # # print("6", image.shape, label.shape)  # (40, 56, 40, 1) (40, 56, 40, 3)
-    # image = tf.convert_to_tensor(image, dtype=tf.float32)
-    # label = tf.convert_to_tensor(label, dtype=tf.float32)
-    # return image, label
 
   def _data_augmentation_val(self, image, label):
-    # print("check shape:", image.numpy().shape, label.numpy().shape)
-    # image = image.numpy()
-    # label = label.numpy()
-    # label = label[np.newaxis, :]
-    # # print("1", image.shape, label.shape)
-    # data = np.concatenate((image, label), axis=0)
-    # # print("2", data.shape)
-    # data_dict = DataLoader3D(data, patch_size=[40, 56, 40], final_patch_size=[40, 56, 40], batch_size=1,
-    #                     has_prev_stage=False, pad_mode="constant", pad_sides=None,
-    #                     memmap_mode='r').generate_train_batch()
-    # # print("3", data_dict['data'].shape, data_dict['seg'].shape)
-    # image = data_dict['data']
-    # label = data_dict['seg']
-    # image, label = val_transforms(image, label)
-    # # print("4", image.shape, label.shape)
-    # image = np.squeeze(image, 0)
-    # label = np.squeeze(label, 0)
-    # label = np.squeeze(label, 0)
-    # # print("5", image.shape, label.shape)
-    # label = self._to_one_hot(label)
-    # image = np.moveaxis(image, 0, -1)
-    # label = np.moveaxis(label, 0, -1)
-    # # print("6", image.shape, label.shape)
-    # image = tf.convert_to_tensor(image, dtype=tf.float32)
-    # label = tf.convert_to_tensor(label, dtype=tf.float32)
-    # return image, label
     image, label = process_batch(image, label[tf.newaxis,], tf.constant([40, 56, 40]), tf.constant([40, 56, 40]))
-    # image, label = tf.convert_to_tensor(image), tf.convert_to_tensor(label)
     image, label = tf_val_transforms(image, label)
-    # tf.print(tf.shape(image), tf.shape(label))
     return image[0], label[0]
-
- # One-hot-encoding for seg labels
-  def _to_one_hot(self, seg, all_seg_labels=None):
-    if all_seg_labels is None:
-      all_seg_labels = np.unique(seg)
-    result = np.zeros((len(all_seg_labels), *seg.shape), dtype=seg.dtype)
-    for i, l in enumerate(all_seg_labels):
-      result[i][seg == l] = 1
-    # discard the first dim (background class), then "channels_first" to "channels_last"
-    # result = np.moveaxis(result, 0, -1)
-    # result = np.moveaxis(result[1:], 0, -1)
-
-    return result
 
   def _parse_train_data(self, data: Dict[str,
                                         Any]) -> Tuple[tf.Tensor, tf.Tensor]:
     """Parses data for training and evaluation."""
     image, labels = self._prepare_image_and_label_tr(data)
-    # print("parsing tr:", image.shape.as_list(), labels.shape.as_list())
 
     # Cast image as self._dtype
     image = tf.cast(image, dtype=self._dtype)
@@ -322,13 +210,12 @@ class Parser(parser.Parser):
                                         Any]) -> Tuple[tf.Tensor, tf.Tensor]:
     """Parses data for training and evaluation."""
     image, labels = self._prepare_image_and_label_val(data)
-    # print("parsing val:", image.shape.as_list(), labels.shape.as_list())
-
 
     # Cast image as self._dtype
     image = tf.cast(image, dtype=self._dtype)
 
     return image, labels
+
 
 @tf.function
 def tf_tr_transforms(images, segs, dator=None, border_val_seg=-1,
@@ -336,8 +223,6 @@ def tf_tr_transforms(images, segs, dator=None, border_val_seg=-1,
                             soft_ds=False,
                             classes=None, pin_memory=True, regions=None,
                             use_nondetMultiThreadedAugmenter: bool = False):
-    # params = dator.data_aug_param
-    # images, segs = tf.transpose(images, (0, 4, 1, 2, 3)), tf.transpose(segs, (0, 4, 1, 2, 3))
     data_dict = SpatialTransform(
         patch_size=[40, 56, 40], patch_center_dist_from_border=nan,
         do_elastic_deform=False, alpha=(0.0, 900.0), sigma=(9.0, 13.0),
@@ -363,15 +248,9 @@ def tf_tr_transforms(images, segs, dator=None, border_val_seg=-1,
     data_dict = MirrorTransform((0, 1, 2))(data_dict)
     data_dict = MaskTransform(tf.constant([[0, 0]]), mask_idx_in_seg=0, set_outside_to=0.0)(data_dict)
     data_dict = RemoveLabelTransform(-1, 0)(data_dict)
-    # tf.print(tf.shape(data_dict['data']), tf.shape(data_dict['seg']))
-    # data_dict = TFDAData(data=images, seg=segs)  # just for test here
-    # # 9, 1, 40, 56, 40
     data_dict = OneHotTransform()(data_dict)
-    # # 9, 3, 40, 56, 40
-    # images = tf.transpose(data_dict['data'], (0, 2, 3, 4, 1))
-    # segs = tf.transpose(segs, (0, 2, 3, 4, 1))
-    # tf.print(tf.shape(images), tf.shape(segs))
     return data_dict.data, data_dict.seg
+
 
 @tf.function
 def tf_val_transforms(images, segs, dator=None, border_val_seg=-1,
@@ -379,15 +258,10 @@ def tf_val_transforms(images, segs, dator=None, border_val_seg=-1,
                             soft_ds=False,
                             classes=None, pin_memory=True, regions=None,
                             use_nondetMultiThreadedAugmenter: bool = False):
-    # params = dator.data_aug_param
-    # images, segs = tf.transpose(images, (0, 4, 1, 2, 3)), tf.transpose(segs, (0, 4, 1, 2, 3))
     data_dict = RemoveLabelTransform(-1, 0)(TFDAData(data=images, seg=segs))
     data_dict = OneHotTransform()(data_dict)
-    # # 9, 3, 40, 56, 40
-    # images = tf.transpose(data_dict['data'], (0, 2, 3, 4, 1))
-    # segs = tf.transpose(segs, (0, 2, 3, 4, 1))
-    # tf.print(tf.shape(images), tf.shape(segs))
     return data_dict.data, data_dict.seg
+
 
 @tf.function
 def update_need_to_pad(
@@ -406,6 +280,7 @@ def update_need_to_pad(
         lambda: need_to_pad[d],
     )
 
+
 @tf.function
 def not_force_fg(lb_x, ub_x, lb_y, ub_y, lb_z, ub_z):
     bbox_x_lb = tf.random.uniform(
@@ -418,6 +293,7 @@ def not_force_fg(lb_x, ub_x, lb_y, ub_y, lb_z, ub_z):
         [], minval=lb_z, maxval=ub_z + 1, dtype=tf.int64
     )
     return bbox_x_lb, bbox_y_lb, bbox_z_lb
+
 
 @tf.function
 def process_batch(
