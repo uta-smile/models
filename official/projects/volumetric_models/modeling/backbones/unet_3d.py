@@ -77,8 +77,8 @@ class UNet3D(tf.keras.Model):
 
     self._model_id = model_id
     self._input_specs = input_specs
-    self._pool_size = pool_size
-    self._kernel_size = kernel_size
+    self._pool_size = [(2, 2, 2), (2, 2, 2), (2, 2, 2)]
+    self._kernel_size = [(3, 3, 3), (3, 3, 3), (3, 3, 3), (3, 3, 3)]
     self._activation = activation
     self._base_filters = base_filters
     self._norm_momentum = norm_momentum
@@ -101,10 +101,12 @@ class UNet3D(tf.keras.Model):
     for layer_depth in range(model_id):
       # Two convoluions are applied sequentially without downsampling.
       filter_num = base_filters * (2**layer_depth)
+      if filter_num > 320:
+          filter_num = 320
       x2 = nn_blocks_3d.BasicBlock3DVolume(
-          filters=[filter_num, filter_num * 2],
+          filters=[filter_num, filter_num],
           strides=(1, 1, 1),
-          kernel_size=self._kernel_size,
+          kernel_size=self._kernel_size[layer_depth],
           kernel_regularizer=self._kernel_regularizer,
           activation=self._activation,
           use_sync_bn=self._use_sync_bn,
@@ -114,8 +116,7 @@ class UNet3D(tf.keras.Model):
               x)
       if layer_depth < model_id - 1:
         x = layers.MaxPool3D(
-            pool_size=pool_size,
-            strides=(2, 2, 2),
+            pool_size=self._pool_size[layer_depth],
             padding='valid',
             data_format=tf.keras.backend.image_data_format())(
                 x2)
