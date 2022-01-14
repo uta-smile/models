@@ -135,7 +135,7 @@ class SemanticSegmentation3DTask(base_task.Task):
       The total loss tensor.
     """
     segmentation_loss_fn = segmentation_losses.SegmentationLossDiceScore(
-        metric_type='adaptive')
+        metric_type=None)
     dc_loss = segmentation_loss_fn(model_outputs, labels)
 
     ce_loss = tf.keras.losses.categorical_crossentropy(
