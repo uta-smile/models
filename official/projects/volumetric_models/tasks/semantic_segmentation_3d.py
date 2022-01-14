@@ -28,6 +28,7 @@ from official.projects.volumetric_models.dataloaders import segmentation_input_3
 from official.projects.volumetric_models.evaluation import segmentation_metrics
 from official.projects.volumetric_models.losses import segmentation_losses
 from official.projects.volumetric_models.modeling import factory
+from official.modeling import tf_utils
 
 
 @task_factory.register_task_cls(exp_cfg.SemanticSegmentation3DTask)
@@ -135,8 +136,16 @@ class SemanticSegmentation3DTask(base_task.Task):
     """
     segmentation_loss_fn = segmentation_losses.SegmentationLossDiceScore(
         metric_type='adaptive')
+    dc_loss = segmentation_loss_fn(model_outputs, labels)
 
-    total_loss = segmentation_loss_fn(model_outputs, labels)
+    ce_loss = tf.keras.losses.categorical_crossentropy(
+        labels,
+        model_outputs,
+        from_logits=True,
+        label_smoothing=0.0)
+    ce_loss = tf_utils.safe_mean(ce_loss)
+
+    total_loss = dc_loss + ce_loss
 
     if aux_losses:
       total_loss += tf.add_n(aux_losses)
