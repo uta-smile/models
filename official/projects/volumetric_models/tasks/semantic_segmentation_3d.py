@@ -166,10 +166,10 @@ class SemanticSegmentation3DTask(base_task.Task):
       self.metrics = [
           segmentation_metrics.DiceScore(
               num_classes=num_classes,
-              metric_type='generalized',
+              metric_type=None,
               per_class_metric=self.task_config.evaluation
               .report_per_class_metric,
-              name='val_generalized_dice',
+              name='val_dice',
               dtype=tf.float32)
       ]
 
