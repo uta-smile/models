@@ -70,6 +70,8 @@ class UNet3DDecoder(tf.keras.Model):
         amount memory required during training. Default to False.
       **kwargs: Keyword arguments to be passed.
     """
+    pool_size = [(2, 2, 2), (2, 2, 2), (2, 2, 2)]
+    kernel_size = [(3, 3, 3), (3, 3, 3), (3, 3, 3), (3, 3, 3)]
     self._config_dict = {
         'model_id': model_id,
         'input_specs': input_specs,
@@ -104,11 +106,11 @@ class UNet3DDecoder(tf.keras.Model):
       if use_deconvolution:
         x = layers.Conv3DTranspose(
             filters=x.get_shape().as_list()[channel_dim],
-            kernel_size=pool_size,
-            strides=(2, 2, 2))(
+            kernel_size=pool_size[layer_depth - 1],
+            strides=pool_size[layer_depth - 1])(
                 x)
       else:
-        x = layers.UpSampling3D(size=pool_size)(x)
+        x = layers.UpSampling3D(size=pool_size[layer_depth - 1])(x)
 
       # Concatenate upsampled features with input features from one layer up.
       x = tf.concat([x, tf.cast(inputs[str(layer_depth)], dtype=x.dtype)],
@@ -117,7 +119,7 @@ class UNet3DDecoder(tf.keras.Model):
       x = nn_blocks_3d.BasicBlock3DVolume(
           filters=[filter_num, filter_num],
           strides=(1, 1, 1),
-          kernel_size=kernel_size,
+          kernel_size=kernel_size[layer_depth - 1],
           kernel_regularizer=kernel_regularizer,
           activation=activation,
           use_sync_bn=use_sync_bn,
