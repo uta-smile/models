@@ -18,6 +18,7 @@ from typing import Any, Dict, Sequence, Tuple
 import tensorflow as tf
 from official.vision.beta.dataloaders import decoder
 from official.vision.beta.dataloaders import parser
+from official.projects.volumetric_models.data_augmentations import tf_tr_transforms, tf_val_transforms
 
 from tfda.transforms.spatial_transforms import SpatialTransform, MirrorTransform
 from tfda.transforms.noise_transforms import GaussianNoiseTransform, GaussianBlurTransform
@@ -90,6 +91,8 @@ class Parser(parser.Parser):
     self._jsn = jsn
     self.process_plans()
     self.setup_DA_params()
+    self.tr_da = tf_tr_transforms(self)
+    self.val_da = tf_val_transforms(self)
 
   def _prepare_image_and_label(
       self, data: Dict[str, Any]) -> Tuple[tf.Tensor, tf.Tensor]:
@@ -535,4 +538,3 @@ def process_batch(
         constant_values=-1,
     )
     return img[tf.newaxis,], seg[tf.newaxis,]
-

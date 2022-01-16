@@ -16,8 +16,7 @@
 # Tensorflow
 import tensorflow as tf
 
-# Local
-from tfda.augmentations.utils import to_one_hot
+
 from tfda.defs import TFDAData, nan
 from tfda.transforms.color_transforms import (
     BrightnessMultiplicativeTransform,
@@ -38,25 +37,7 @@ from tfda.transforms.utility_transforms import RemoveLabelTransform
 
 
 @tf.function
-def tf_tr_transforms(
-    images: tf.Tensor,
-    segs: tf.Tensor,
-    dator,
-    border_val_seg=-1,
-    seeds_train=None,
-    seeds_val=None,
-    order_seg=1,
-    order_data=3,
-    deep_supervision_scales=None,
-    soft_ds=False,
-    classes=None,
-    pin_memory=True,
-    regions=None,
-    use_nondetMultiThreadedAugmenter: bool = False,
-):
-    params = dator.data_aug_param
-    images = tf.transpose(images, (0, 4, 1, 2, 3))
-    segs = tf.transpose(segs, (0, 4, 1, 2, 3))
+def tf_tr_transforms(self):
 
     da = tf.keras.layers.Sequential(
         [
@@ -64,29 +45,29 @@ def tf_tr_transforms(
                 type_spec=TFDAData.Spec(None, tf.TensorSpec(None), tf.TensorSpec(None))
             ),
             SpatialTransform(
-                dator.patch_size,
+                patch_size=self.patch_size,
                 patch_center_dist_from_border=nan,
-                do_elastic_deform=params.get("do_elastic"),
-                alpha=params.get("elastic_deform_alpha"),
-                sigma=params.get("elastic_deform_sigma"),
-                do_rotation=params.get("do_rotation"),
-                angle_x=params.get("rotation_x"),
-                angle_y=params.get("rotation_y"),
-                angle_z=params.get("rotation_z"),
-                p_rot_per_axis=params.get("rotation_p_per_axis"),
-                do_scale=params.get("do_scaling"),
-                scale=params.get("scale_range"),
-                border_mode_data=params.get("border_mode_data"),
+                do_elastic_deform=self.data_aug_param.get("do_elastic"),
+                alpha=self.data_aug_param.get("elastic_deform_alpha"),
+                sigma=self.data_aug_param.get("elastic_deform_sigma"),
+                do_rotation=self.data_aug_param.get("do_rotation"),
+                angle_x=self.data_aug_param.get("rotation_x"),
+                angle_y=self.data_aug_param.get("rotation_y"),
+                angle_z=self.data_aug_param.get("rotation_z"),
+                p_rot_per_axis=self.data_aug_param.get("rotation_p_per_axis"),
+                do_scale=self.data_aug_param.get("do_scaling"),
+                scale=self.data_aug_param.get("scale_range"),
+                border_mode_data="constant",
                 border_cval_data=0,
-                order_data=order_data,
+                order_data=3,
                 border_mode_seg="constant",
-                border_cval_seg=border_val_seg,
-                order_seg=order_seg,
-                random_crop=params.get("random_crop"),
-                p_el_per_sample=params.get("p_eldef"),
-                p_scale_per_sample=params.get("p_scale"),
-                p_rot_per_sample=params.get("p_rot"),
-                independent_scale_for_each_axis=params.get(
+                border_cval_seg=-1,
+                order_seg=1,
+                random_crop=self.data_aug_param.get("random_crop"),
+                p_el_per_sample=self.data_aug_param.get("p_eldef"),
+                p_scale_per_sample=self.data_aug_param.get("p_scale"),
+                p_rot_per_sample=self.data_aug_param.get("p_rot"),
+                independent_scale_for_each_axis=self.data_aug_param.get(
                     "independent_scale_factor_for_each_axis"
                 ),
             ),
@@ -111,60 +92,40 @@ def tf_tr_transforms(
                 order_upsample=3,
                 p_per_sample=0.25,
             ),
-            GammaTransform((0.7, 1.5), True, True, retain_stats=True, p_per_sample=0.1),
             GammaTransform(
-                (0.7, 1.5), False, True, retain_stats=True, p_per_sample=0.3
+                self.data_aug_param.get("gamma_range"),
+                True,
+                True,
+                retain_stats=self.data_aug_param.get("gamma_retain_stats"),
+                p_per_sample=0.1,
             ),
-            MirrorTransform((0, 1, 2)),
+            GammaTransform(
+                self.data_aug_param.get("gamma_range"),
+                False,
+                True,
+                retain_stats=self.data_aug_param.get("gamma_retain_stats"),
+                p_per_sample=self.data_aug_param.get("p_gamma"),
+            ),
+            MirrorTransform(self.data_aug_param.get("mirror_axes")),
             MaskTransform(tf.constant([[0, 0]]), mask_idx_in_seg=0, set_outside_to=0.0),
             RemoveLabelTransform(-1, 0),
-            OneHotTransform(),
+            OneHotTransform(tf.nest.map_structure(float, self._jsn["labels"].keys())),
         ]
     )
-
     da.compile()
-
-    data_dict = da(TFDAData(data=images, seg=segs))
-
-    images = data_dict.data
-    segs = data_dict.seg
-
-    return images, segs
+    return da
 
 
 @tf.function
-def tf_val_transforms(
-    images,
-    segs,
-    dator,
-    border_val_seg=-1,
-    seeds_train=None,
-    seeds_val=None,
-    order_seg=1,
-    order_data=3,
-    deep_supervision_scales=None,
-    soft_ds=False,
-    classes=None,
-    pin_memory=True,
-    regions=None,
-    use_nondetMultiThreadedAugmenter: bool = False,
-):
-    params = dator.data_aug_param
-    images = tf.transpose(images, (0, 4, 1, 2, 3))
-    segs = tf.transpose(segs, (0, 4, 1, 2, 3))
-
+def tf_val_transforms(self):
     da = tf.keras.layers.Sequential(
         [
             tf.keras.layers.Input(
                 type_spec=TFDAData.Spec(None, tf.TensorSpec(None), tf.TensorSpec(None))
             ),
             RemoveLabelTransform(-1, 0),
-            OneHotTransform(),
+            OneHotTransform(tf.nest.map_structure(float, self._jsn["labels"].keys())),
         ]
     )
     da.compile()
-    data_dict = da(TFDAData(data=images, seg=segs))
-    images = data_dict.data
-    segs = data_dict.seg
-    # tf.print(tf.shape(data_dict['data']), tf.shape(data_dict['seg']))
-    return images, segs
+    return da
