@@ -18,7 +18,7 @@ from typing import Any, Dict, Sequence, Tuple
 import tensorflow as tf
 from official.vision.beta.dataloaders import decoder
 from official.vision.beta.dataloaders import parser
-from official.projects.volumetric_models.data_augmentations import tf_tr_transforms, tf_val_transforms
+from official.projects.volumetric_models.data_augmentations.data_aug import tf_tr_transforms, tf_val_transforms
 
 from tfda.transforms.spatial_transforms import SpatialTransform, MirrorTransform
 from tfda.transforms.noise_transforms import GaussianNoiseTransform, GaussianBlurTransform
