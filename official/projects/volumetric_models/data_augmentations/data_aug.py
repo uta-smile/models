@@ -39,7 +39,7 @@ from tfda.transforms.utility_transforms import RemoveLabelTransform
 @tf.function
 def tf_tr_transforms(self):
 
-    da = tf.keras.layers.Sequential(
+    da = tf.keras.Sequential(
         [
             tf.keras.layers.Input(
                 type_spec=TFDAData.Spec(None, tf.TensorSpec(None), tf.TensorSpec(None))
@@ -118,7 +118,7 @@ def tf_tr_transforms(self):
 
 @tf.function
 def tf_val_transforms(self):
-    da = tf.keras.layers.Sequential(
+    da = tf.keras.Sequential(
         [
             tf.keras.layers.Input(
                 type_spec=TFDAData.Spec(None, tf.TensorSpec(None), tf.TensorSpec(None))

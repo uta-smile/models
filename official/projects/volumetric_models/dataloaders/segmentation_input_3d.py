@@ -91,8 +91,8 @@ class Parser(parser.Parser):
     self._jsn = jsn
     self.process_plans()
     self.setup_DA_params()
-    self.tr_da = tf_tr_transforms(self)
-    self.val_da = tf_val_transforms(self)
+    # self.tr_da = tf_tr_transforms(self)
+    # self.val_da = tf_val_transforms(self)
 
   def _prepare_image_and_label(
       self, data: Dict[str, Any]) -> Tuple[tf.Tensor, tf.Tensor]:
@@ -233,7 +233,7 @@ class Parser(parser.Parser):
 
     self.batch_size = stage_plans['batch_size']
     self.patch_size = stage_plans['patch_size']
-    self.do_dummy_2D_aug = stage_plans['do_dumy_2D_data_aug']
+    self.do_dummy_2D_aug = stage_plans['do_dummy_2D_data_aug']
     self.pad_all_sides = None
     self.use_mask_for_norm = self._pkl['use_mask_for_norm'][0]
     if len(self.patch_size) == 2:
