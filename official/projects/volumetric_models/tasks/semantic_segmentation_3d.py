@@ -14,6 +14,8 @@
 
 # Lint as: python3
 """Image segmentation task definition."""
+import json
+import pickle
 from typing import Any, Dict, Mapping, Optional, Sequence, Union
 
 from absl import logging
@@ -97,6 +99,11 @@ class SemanticSegmentation3DTask(base_task.Task):
                  ckpt_dir_or_file)
 
   def build_inputs(self, params, input_context=None) -> tf.data.Dataset:
+    with open(params.jsn_path, 'r') as f:
+      jsn = json.load(f)
+    with open(params.plans_file, 'rb') as f:
+      pkl = pickle.load(f)
+
     """Builds classification input."""
     decoder = segmentation_input_3d.Decoder(
         image_field_key=params.image_field_key,
@@ -108,7 +115,9 @@ class SemanticSegmentation3DTask(base_task.Task):
         image_field_key=params.image_field_key,
         label_field_key=params.label_field_key,
         dtype=params.dtype,
-        label_dtype=params.label_dtype)
+        label_dtype=params.label_dtype,
+        pkl=pkl,
+        jsn=jsn)
 
     reader = input_reader.InputReader(
         params,

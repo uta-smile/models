@@ -44,6 +44,8 @@ class DataConfig(cfg.DataConfig):
   cycle_length: int = 10
   drop_remainder: bool = False
   file_type: str = 'tfrecord'
+  jsn_path: str = ''
+  plans_file: str = ''
 
 
 @dataclasses.dataclass

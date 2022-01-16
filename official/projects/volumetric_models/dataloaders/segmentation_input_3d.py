@@ -25,7 +25,8 @@ from tfda.transforms.color_transforms import BrightnessMultiplicativeTransform, 
 from tfda.transforms.custom_transforms import MaskTransform, OneHotTransform
 from tfda.transforms.utility_transforms import RemoveLabelTransform
 from tfda.transforms.resample_transforms import SimulateLowResolutionTransform
-from tfda.defs import TFDAData, nan
+from tfda.defs import TFDAData, TFDADefault3DParams, DTFT, TFbF, TFbT, nan, pi
+from tfda.data_processing_utils import get_batch_size
 
 
 class Decoder(decoder.Decoder):
@@ -61,7 +62,9 @@ class Parser(parser.Parser):
               image_shape_key: str = 'image_shape',
               label_shape_key: str = 'label_shape',
               dtype: str = 'float32',
-              label_dtype: str = 'int32'):
+              label_dtype: str = 'int32',
+              pkl = None,
+              jsn = None):
     """Initializes parameters for parsing annotations in the dataset.
 
     Args:
@@ -83,6 +86,10 @@ class Parser(parser.Parser):
     self._label_shape_key = label_shape_key
     self._dtype = dtype
     self._label_dtype = label_dtype
+    self._pkl = pkl
+    self._jsn = jsn
+    self.process_plans()
+    self.setup_DA_params()
 
   def _prepare_image_and_label(
       self, data: Dict[str, Any]) -> Tuple[tf.Tensor, tf.Tensor]:
@@ -187,13 +194,13 @@ class Parser(parser.Parser):
     return image, label
 
   def _data_augmentation_tr(self, image, label):
-    image, label = process_batch(image, label[tf.newaxis,], tf.constant([73, 80, 64]), tf.constant([40, 56, 40]))
-    image, label = tf_tr_transforms(image, label)
+    image, label = process_batch(image, label[tf.newaxis,], self.basic_generator_patch_size, self.patch_size)
+    image, label = self.tf_tr_transforms(image, label)
     return image[0], label[0]
 
   def _data_augmentation_val(self, image, label):
-    image, label = process_batch(image, label[tf.newaxis,], tf.constant([40, 56, 40]), tf.constant([40, 56, 40]))
-    image, label = tf_val_transforms(image, label)
+    image, label = process_batch(image, label[tf.newaxis,], self.patch_size, self.patch_size)
+    image, label = self.tf_val_transforms(image, label)
     return image[0], label[0]
 
   def _parse_train_data(self, data: Dict[str,
@@ -216,51 +223,175 @@ class Parser(parser.Parser):
 
     return image, labels
 
+  def process_plans(self):
+    #  TODO here, we do not consider cascade. So, we always pick the first stage plan
+    self.stage = list(self._pkl['plans_per_stage'].keys())[0]
+    stage_plans = self._pkl['plans_per_stage'][self.stage]
 
-@tf.function
-def tf_tr_transforms(images, segs, dator=None, border_val_seg=-1,
-                            seeds_train=None, seeds_val=None, order_seg=1, order_data=3, deep_supervision_scales=None,
-                            soft_ds=False,
-                            classes=None, pin_memory=True, regions=None,
-                            use_nondetMultiThreadedAugmenter: bool = False):
-    data_dict = SpatialTransform(
-        patch_size=[40, 56, 40], patch_center_dist_from_border=nan,
-        do_elastic_deform=False, alpha=(0.0, 900.0), sigma=(9.0, 13.0),
-        do_rotation=True, angle_x=(-0.5235987755982988, 0.5235987755982988),
-        angle_y=(-0.5235987755982988, 0.5235987755982988),
-        angle_z=(-0.5235987755982988, 0.5235987755982988), p_rot_per_axis=1,
-        do_scale=True, scale=(0.7, 1.4), border_mode_data='constant', border_cval_data=0,
-        order_data=3, border_mode_seg="constant", border_cval_seg=-1, order_seg=1,
-        random_crop=False, p_el_per_sample=0.2, p_scale_per_sample=0.2, p_rot_per_sample=0.2,
-        independent_scale_for_each_axis=False
-    )(TFDAData(data=images, seg=segs))
-    data_dict = GaussianNoiseTransform(data_key="data", label_key="seg", p_per_channel=0.01)(data_dict)
-    data_dict = GaussianBlurTransform((0.5, 1.), different_sigma_per_channel=True, p_per_sample=0.2,
-                                    p_per_channel=0.5)(data_dict)
-    data_dict = BrightnessMultiplicativeTransform(multiplier_range=(0.75, 1.25), p_per_sample=0.15)(data_dict)
-    data_dict = ContrastAugmentationTransform(p_per_sample=0.15)(data_dict)
+    self.batch_size = stage_plans['batch_size']
+    self.patch_size = stage_plans['patch_size']
+    self.do_dummy_2D_aug = stage_plans['do_dumy_2D_data_aug']
+    self.pad_all_sides = None
+    self.use_mask_for_norm = self._pkl['use_mask_for_norm'][0]
+    if len(self.patch_size) == 2:
+      self.threeD = False
+    else:
+      self.threeD = True  # we only consider 2 circumstances: 3D and 2D
 
-    data_dict = SimulateLowResolutionTransform(zoom_range=(0.5, 1), per_channel=True, p_per_channel=0.5,
-                                            order_downsample=0, order_upsample=3, p_per_sample=0.25)(data_dict)
+  def setup_DA_params(self):
+    if self.threeD:
+      rotation_x = (
+          -30.0 / 360 * 2.0 * pi,
+          30.0 / 360 * 2.0 * pi,
+      )
+      rotation_y = (
+          -30.0 / 360 * 2.0 * pi,
+          30.0 / 360 * 2.0 * pi,
+      )
+      rotation_z = (
+          -30.0 / 360 * 2.0 * pi,
+          30.0 / 360 * 2.0 * pi,
+      )
+      if self.do_dummy_2D_aug:
+          dummy_2D = TFbT
+          # print("Using dummy2d data augmentation")
+          elastic_deform_alpha = (0.0, 200.0)
+          elastic_deform_sigma = (9.0, 13.0)
+          rotation_x = (
+              -180.0 / 360 * 2.0 * pi,
+              180.0 / 360 * 2.0 * pi,
+          )
+          self.data_aug_param = TFDADefault3DParams(
+              rotation_x=rotation_x,
+              rotation_y=rotation_y,
+              rotation_z=rotation_z,
+              dummy_2D=dummy_2D,
+              elastic_deform_alpha=elastic_deform_alpha,
+              elastic_deform_sigma=elastic_deform_sigma,
+              scale_range=(0.7, 1.4),
+              do_elastic=TFbF,
+              selected_seg_channels=[0],
+              patch_size_for_spatial_transform=self.patch_size,
+              num_cached_per_thread=2,
+              mask_was_used_for_normalization=self.use_mask_for_norm,
+          )
+      else:
+          self.data_aug_param = TFDADefault3DParams(
+              rotation_x=rotation_x,
+              rotation_y=rotation_y,
+              rotation_z=rotation_z,
+              scale_range=(0.7, 1.4),
+              do_elastic=TFbF,
+              selected_seg_channels=[0],
+              patch_size_for_spatial_transform=self.patch_size,
+              num_cached_per_thread=2,
+              mask_was_used_for_normalization=self.use_mask_for_norm,
+          )
+    else:
+      self.do_dummy_2D_aug = TFbF
+      if tf.maximum(self.patch_size) / tf.minimum(self.patch_size) > 1.5:
+          rotation_x = (
+              -15.0 / 360 * 2.0 * pi,
+              15.0 / 360 * 2.0 * pi,
+          )
+      else:
+          rotation_x = (
+              -180.0 / 360 * 2.0 * pi,
+              180.0 / 360 * 2.0 * pi,
+          )
+      elastic_deform_alpha = (0.0, 200.0)
+      elastic_deform_sigma = (9.0, 13.0)
+      rotation_y = (
+          -0.0 / 360 * 2.0 * pi,
+          0.0 / 360 * 2.0 * pi,
+      )
+      rotation_z = (
+          -0.0 / 360 * 2.0 * pi,
+          0.0 / 360 * 2.0 * pi,
+      )
+      dummy_2D = TFbF
+      mirror_axes = (
+          0,
+          1,
+      )
+      self.data_aug_param = TFDADefault3DParams(
+          rotation_x=rotation_x,
+          rotation_y=rotation_y,
+          rotation_z=rotation_z,
+          elastic_deform_alpha=elastic_deform_alpha,
+          elastic_deform_sigma=elastic_deform_sigma,
+          dummy_2D=dummy_2D,
+          mirror_axes=mirror_axes,
+          mask_was_used_for_normalization=self.use_mask_for_norm,
+          scale_range=(0.7, 1.4),
+          do_elastic=TFbF,
+          selected_seg_channels=[0],
+          patch_size_for_spatial_transform=self.patch_size,
+          num_cached_per_thread=2,
+            )
 
-    data_dict = GammaTransform((0.7, 1.5), True, True, retain_stats=True, p_per_sample=0.1)(data_dict)
-    data_dict = GammaTransform((0.7, 1.5), False, True, retain_stats=True, p_per_sample=0.3)(data_dict)
-    data_dict = MirrorTransform((0, 1, 2))(data_dict)
-    data_dict = MaskTransform(tf.constant([[0, 0]]), mask_idx_in_seg=0, set_outside_to=0.0)(data_dict)
-    data_dict = RemoveLabelTransform(-1, 0)(data_dict)
-    data_dict = OneHotTransform()(data_dict)
-    return data_dict.data, data_dict.seg
+    if self.do_dummy_2D_aug:
+        self.basic_generator_patch_size = get_batch_size(
+            self.patch_size[1:],
+            self.data_aug_param["rotation_x"],
+            self.data_aug_param["rotation_y"],
+            self.data_aug_param["rotation_z"],
+            (0.85, 1.25),
+        )
+        self.basic_generator_patch_size = tf.constant(
+            [self.patch_size[0]] + list(self.basic_generator_patch_size)
+        )
+
+    else:
+        self.basic_generator_patch_size = get_batch_size(
+            self.patch_size,
+            self.data_aug_param["rotation_x"],
+            self.data_aug_param["rotation_y"],
+            self.data_aug_param["rotation_z"],
+            (0.85, 1.25),
+        )
+    self.basic_generator_patch_size = tf.cast(
+        self.basic_generator_patch_size, tf.int64
+    )
 
 
-@tf.function
-def tf_val_transforms(images, segs, dator=None, border_val_seg=-1,
-                            seeds_train=None, seeds_val=None, order_seg=1, order_data=3, deep_supervision_scales=None,
-                            soft_ds=False,
-                            classes=None, pin_memory=True, regions=None,
-                            use_nondetMultiThreadedAugmenter: bool = False):
-    data_dict = RemoveLabelTransform(-1, 0)(TFDAData(data=images, seg=segs))
-    data_dict = OneHotTransform()(data_dict)
-    return data_dict.data, data_dict.seg
+  @tf.function
+  def tf_tr_transforms(self, images, segs):
+      data_dict = SpatialTransform(
+          patch_size=self.patch_size, patch_center_dist_from_border=nan,
+          do_elastic_deform=self.data_aug_param.get('do_elastic'), alpha=self.data_aug_param.get('elastic_deform_alpha'),
+          sigma=self.data_aug_param.get('elastic_deform_sigma'),
+          do_rotation=self.data_aug_param.get("do_rotation"), angle_x=self.data_aug_param.get("rotation_x"),
+          angle_y=self.data_aug_param.get("rotation_y"),
+          angle_z=self.data_aug_param.get("rotation_z"), p_rot_per_axis=self.data_aug_param.get("rotation_p_per_axis"),
+          do_scale=self.data_aug_param.get("do_scaling"), scale=self.data_aug_param.get("scale_range"), border_mode_data='constant', border_cval_data=0,
+          order_data=3, border_mode_seg="constant", border_cval_seg=-1, order_seg=1,
+          random_crop=self.data_aug_param.get("random_crop"), p_el_per_sample=self.data_aug_param.get("p_eldef"), p_scale_per_sample=self.data_aug_param.get("p_scale"), p_rot_per_sample=self.data_aug_param.get("p_rot"),
+          independent_scale_for_each_axis=self.data_aug_param.get("independent_scale_factor_for_each_axis")
+      )(TFDAData(data=images, seg=segs))
+      data_dict = GaussianNoiseTransform(data_key="data", label_key="seg", p_per_channel=0.01)(data_dict)
+      data_dict = GaussianBlurTransform((0.5, 1.), different_sigma_per_channel=True, p_per_sample=0.2,
+                                      p_per_channel=0.5)(data_dict)
+      data_dict = BrightnessMultiplicativeTransform(multiplier_range=(0.75, 1.25), p_per_sample=0.15)(data_dict)
+      data_dict = ContrastAugmentationTransform(p_per_sample=0.15)(data_dict)
+
+      data_dict = SimulateLowResolutionTransform(zoom_range=(0.5, 1), per_channel=True, p_per_channel=0.5,
+                                              order_downsample=0, order_upsample=3, p_per_sample=0.25)(data_dict)
+
+      data_dict = GammaTransform(self.data_aug_param.get("gamma_range"), True, True, retain_stats=self.data_aug_param.get("gamma_retain_stats"), p_per_sample=0.1)(data_dict)
+      data_dict = GammaTransform(self.data_aug_param.get("gamma_range"), False, True, retain_stats=self.data_aug_param.get("gamma_retain_stats"), p_per_sample=self.data_aug_param.get("p_gamma"))(data_dict)
+      data_dict = MirrorTransform(self.data_aug_param.get("mirror_axes"))(data_dict)
+      data_dict = MaskTransform(tf.constant([[0, 0]]), mask_idx_in_seg=0, set_outside_to=0.0)(data_dict)
+      data_dict = RemoveLabelTransform(-1, 0)(data_dict)
+      data_dict = OneHotTransform(tuple([float(key) for key in self._jsn['labels'].keys()]))(data_dict)
+      return data_dict.data, data_dict.seg
+
+
+  @tf.function
+  def tf_val_transforms(self, images, segs):
+      data_dict = RemoveLabelTransform(-1, 0)(TFDAData(data=images, seg=segs))
+      data_dict = OneHotTransform(tuple([float(key) for key in self._jsn['labels'].keys()]))(data_dict)
+      return data_dict.data, data_dict.seg
 
 
 @tf.function
