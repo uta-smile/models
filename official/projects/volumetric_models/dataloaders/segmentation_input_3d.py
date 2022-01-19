@@ -20,14 +20,14 @@ from official.vision.beta.dataloaders import decoder
 from official.vision.beta.dataloaders import parser
 from official.projects.volumetric_models.data_augmentations.data_aug import tf_tr_transforms, tf_val_transforms
 
-from tfda.transforms.spatial_transforms import SpatialTransform, MirrorTransform
+from tfda.transforms.spatial_transforms import SpatialTransform, MirrorTransform, SpatialTransform2D
 from tfda.transforms.noise_transforms import GaussianNoiseTransform, GaussianBlurTransform
 from tfda.transforms.color_transforms import BrightnessMultiplicativeTransform, ContrastAugmentationTransform, GammaTransform
-from tfda.transforms.custom_transforms import MaskTransform, OneHotTransform
+from tfda.transforms.custom_transforms import MaskTransform, OneHotTransform, Convert3DTo2DTransform, Convert2DTo3DTransform
 from tfda.transforms.utility_transforms import RemoveLabelTransform
 from tfda.transforms.resample_transforms import SimulateLowResolutionTransform
 from tfda.defs import TFDAData, TFDADefault3DParams, DTFT, TFbF, TFbT, nan, pi
-from tfda.data_processing_utils import get_batch_size
+from tfda.data_processing_utils import get_batch_size, update_tf_channel
 
 
 class Decoder(decoder.Decoder):
@@ -341,9 +341,7 @@ class Parser(parser.Parser):
             self.data_aug_param["rotation_z"],
             (0.85, 1.25),
         )
-        self.basic_generator_patch_size = tf.constant(
-            [self.patch_size[0]] + list(self.basic_generator_patch_size)
-        )
+        self.basic_generator_patch_size = tf.concat([tf.convert_to_tensor([self.patch_size[0]], tf.int32), self.basic_generator_patch_size], axis=0)
 
     else:
         self.basic_generator_patch_size = get_batch_size(
@@ -358,20 +356,45 @@ class Parser(parser.Parser):
     )
 
 
-  @tf.function
+#   @tf.function
   def tf_tr_transforms(self, images, segs):
-      data_dict = SpatialTransform(
-          patch_size=self.patch_size, patch_center_dist_from_border=nan,
-          do_elastic_deform=self.data_aug_param.get('do_elastic'), alpha=self.data_aug_param.get('elastic_deform_alpha'),
-          sigma=self.data_aug_param.get('elastic_deform_sigma'),
-          do_rotation=self.data_aug_param.get("do_rotation"), angle_x=self.data_aug_param.get("rotation_x"),
-          angle_y=self.data_aug_param.get("rotation_y"),
-          angle_z=self.data_aug_param.get("rotation_z"), p_rot_per_axis=self.data_aug_param.get("rotation_p_per_axis"),
-          do_scale=self.data_aug_param.get("do_scaling"), scale=self.data_aug_param.get("scale_range"), border_mode_data='constant', border_cval_data=0,
-          order_data=3, border_mode_seg="constant", border_cval_seg=-1, order_seg=1,
-          random_crop=self.data_aug_param.get("random_crop"), p_el_per_sample=self.data_aug_param.get("p_eldef"), p_scale_per_sample=self.data_aug_param.get("p_scale"), p_rot_per_sample=self.data_aug_param.get("p_rot"),
-          independent_scale_for_each_axis=self.data_aug_param.get("independent_scale_factor_for_each_axis")
-      )(TFDAData(data=images, seg=segs))
+    #   tf.config.run_functions_eagerly(True)
+      data_dict = TFDAData(data=images, seg=segs)
+    #   tf.print(tf.shape(data_dict.data), tf.shape(data_dict.seg))
+
+      if self.do_dummy_2D_aug:
+          data_dict = Convert3DTo2DTransform()(data_dict)
+          patch_size = self.patch_size[1:]
+        #   tf.print(tf.shape(data_dict.data), tf.shape(data_dict.seg))
+        #   tf.print(patch_size)
+          data_dict = SpatialTransform2D(
+            patch_size=patch_size, patch_center_dist_from_border=nan,
+            do_elastic_deform=self.data_aug_param.get('do_elastic'), alpha=self.data_aug_param.get('elastic_deform_alpha'),
+            sigma=self.data_aug_param.get('elastic_deform_sigma'),
+            do_rotation=self.data_aug_param.get("do_rotation"), angle_x=self.data_aug_param.get("rotation_x"),
+            angle_y=self.data_aug_param.get("rotation_y"),
+            angle_z=self.data_aug_param.get("rotation_z"), p_rot_per_axis=self.data_aug_param.get("rotation_p_per_axis"),
+            do_scale=self.data_aug_param.get("do_scaling"), scale=self.data_aug_param.get("scale_range"), border_mode_data='constant', border_cval_data=0,
+            order_data=3, border_mode_seg="constant", border_cval_seg=-1, order_seg=1,
+            random_crop=self.data_aug_param.get("random_crop"), p_el_per_sample=self.data_aug_param.get("p_eldef"), p_scale_per_sample=self.data_aug_param.get("p_scale"), p_rot_per_sample=self.data_aug_param.get("p_rot"),
+            independent_scale_for_each_axis=self.data_aug_param.get("independent_scale_factor_for_each_axis")
+          )(data_dict)
+          data_dict = Convert2DTo3DTransform()(data_dict)
+      else:
+          data_dict = SpatialTransform(
+            patch_size=self.patch_size, patch_center_dist_from_border=nan,
+            do_elastic_deform=self.data_aug_param.get('do_elastic'), alpha=self.data_aug_param.get('elastic_deform_alpha'),
+            sigma=self.data_aug_param.get('elastic_deform_sigma'),
+            do_rotation=self.data_aug_param.get("do_rotation"), angle_x=self.data_aug_param.get("rotation_x"),
+            angle_y=self.data_aug_param.get("rotation_y"),
+            angle_z=self.data_aug_param.get("rotation_z"), p_rot_per_axis=self.data_aug_param.get("rotation_p_per_axis"),
+            do_scale=self.data_aug_param.get("do_scaling"), scale=self.data_aug_param.get("scale_range"), border_mode_data='constant', border_cval_data=0,
+            order_data=3, border_mode_seg="constant", border_cval_seg=-1, order_seg=1,
+            random_crop=self.data_aug_param.get("random_crop"), p_el_per_sample=self.data_aug_param.get("p_eldef"), p_scale_per_sample=self.data_aug_param.get("p_scale"), p_rot_per_sample=self.data_aug_param.get("p_rot"),
+            independent_scale_for_each_axis=self.data_aug_param.get("independent_scale_factor_for_each_axis")
+          )(data_dict)
+    #   tf.config.run_functions_eagerly(False)
+
       data_dict = GaussianNoiseTransform(data_key="data", label_key="seg", p_per_channel=0.01)(data_dict)
       data_dict = GaussianBlurTransform((0.5, 1.), different_sigma_per_channel=True, p_per_sample=0.2,
                                       p_per_channel=0.5)(data_dict)
@@ -384,16 +407,18 @@ class Parser(parser.Parser):
       data_dict = GammaTransform(self.data_aug_param.get("gamma_range"), True, True, retain_stats=self.data_aug_param.get("gamma_retain_stats"), p_per_sample=0.1)(data_dict)
       data_dict = GammaTransform(self.data_aug_param.get("gamma_range"), False, True, retain_stats=self.data_aug_param.get("gamma_retain_stats"), p_per_sample=self.data_aug_param.get("p_gamma"))(data_dict)
       data_dict = MirrorTransform(self.data_aug_param.get("mirror_axes"))(data_dict)
-      data_dict = MaskTransform(tf.constant([[0, 0]]), mask_idx_in_seg=0, set_outside_to=0.0)(data_dict)
+      data_dict = MaskTransform(tf.constant([[0, 0], [1, 0]]), mask_idx_in_seg=0, set_outside_to=0.0)(data_dict)
       data_dict = RemoveLabelTransform(-1, 0)(data_dict)
       data_dict = OneHotTransform(tuple([float(key) for key in self._jsn['labels'].keys()]))(data_dict)
+      tf.print('tr', tf.shape(data_dict.data))
       return data_dict.data, data_dict.seg
 
 
-  @tf.function
+#   @tf.function
   def tf_val_transforms(self, images, segs):
       data_dict = RemoveLabelTransform(-1, 0)(TFDAData(data=images, seg=segs))
       data_dict = OneHotTransform(tuple([float(key) for key in self._jsn['labels'].keys()]))(data_dict)
+      tf.print('val', tf.shape(data_dict.data))
       return data_dict.data, data_dict.seg
 
 
@@ -538,3 +563,90 @@ def process_batch(
         constant_values=-1,
     )
     return img[tf.newaxis,], seg[tf.newaxis,]
+
+@tf.function
+def process_batch2d(
+    image,
+    label,
+    basic_generator_patch_size,
+    patch_size,
+    pseud_3d_slices,
+    ):
+    zero = tf.constant(0, dtype=tf.int64)
+    image = tf.cast(image, dtype=tf.float32)
+    label = tf.cast(label, dtype=tf.float32)
+    case_all_data = tf.concat([image, label], axis=0)
+    case_all_data = tf.cond(tf.equal(tf.rank(case_all_data), 3), lambda: case_all_data[:, tf.newaxis], lambda: case_all_data)
+    random_slice = tf.random.uniform([], minval=0, maxval=tf.shape(case_all_data)[1], dtype=tf.int32)
+    case_all_data = tf.cond(tf.equal(pseud_3d_slices, 1), lambda: case_all_data[:, random_slice], lambda: process_pseud_3d_slices(case_all_data, random_slice, pseud_3d_slices))
+    basic_generator_patch_size = tf.cast(basic_generator_patch_size, dtype=tf.int64)
+    patch_size = tf.cast(patch_size, dtype=tf.int64)
+    need_to_pad = basic_generator_patch_size - patch_size
+    need_to_pad = tf.map_fn(
+        lambda d: update_need_to_pad(
+            need_to_pad, d, basic_generator_patch_size, case_all_data
+        ),
+        elems=tf.range(2, dtype=tf.int64),
+    )
+    need_to_pad = tf.cast(need_to_pad, tf.int64)
+    shape = tf.shape(case_all_data)[1:]
+    lb_x = -need_to_pad[0] // 2
+    ub_x = shape[0] + need_to_pad[0] // 2 + need_to_pad[0] % 2 - basic_generator_patch_size[0]
+    lb_y = -need_to_pad[1] // 2
+    ub_y = shape[1] + need_to_pad[1] // 2 + need_to_pad[1] % 2 - basic_generator_patch_size[1]
+
+    #TODO force_fg = False
+    bbox_x_lb = tf.random.uniform([], minval=lb_x, maxval=ub_x+1, dtype=tf.int64)
+    bbox_y_lb = tf.random.uniform([], minval=lb_y, maxval=ub_y+1, dtype=tf.int64)
+
+    bbox_x_ub = bbox_x_lb + basic_generator_patch_size[0]
+    bbox_y_ub = bbox_y_lb + basic_generator_patch_size[1]
+    valid_bbox_x_lb = tf.maximum(zero, bbox_x_lb)
+    valid_bbox_x_ub = tf.minimum(shape[0], bbox_x_ub)
+    valid_bbox_y_lb = tf.maximum(zero, bbox_y_lb)
+    valid_bbox_y_ub = tf.minimum(shape[1], bbox_y_ub)
+    case_all_data = case_all_data[:, valid_bbox_x_lb: valid_bbox_x_ub,
+                                valid_bbox_y_lb: valid_bbox_y_ub]
+    case_all_data_donly = tf.pad(case_all_data[:-1], [[0, 0],
+                                                    [-tf.minimum(zero, bbox_x_lb), tf.maximum(bbox_x_ub - shape[0], zero)],
+                                                    [-tf.minimum(zero, bbox_y_lb), tf.maximum(bbox_y_ub - shape[1], zero)]])
+    case_all_data_segonly = tf.pad(case_all_data[-1:], [[0, 0], 
+                                                        [-tf.minimum(zero, bbox_x_lb), tf.maximum(bbox_x_ub - shape[0], zero)],
+                                                        [-tf.minimum(zero, bbox_y_lb), tf.maximum(bbox_y_ub - shape[1], zero)]],
+                                constant_values=-1)
+
+    return case_all_data_donly[tf.newaxis,], case_all_data_segonly[tf.newaxis,]
+
+@tf.function
+def process_pseud_3d_slices(case_all_data, random_slice, pseud_3d_slices):
+    zero = tf.constant(0, dtype=tf.int64)
+    mn = random_slice - (pseud_3d_slices - 1) // 2
+    mx = random_slice + (pseud_3d_slices - 1) // 2 + 1
+    valid_mn = tf.maximum(mn, zero)
+    valid_mx = tf.minimum(mx, tf.shape(case_all_data)[1])
+    case_all_seg = case_all_data[-1:]
+    case_all_data = case_all_data[:-1]
+    case_all_data = case_all_data[:, valid_mn: valid_mx]
+    case_all_seg = case_all_seg[:, random_slice]
+    need_to_pad_below = valid_mn - mn
+    need_to_pad_above = mx - valid_mx
+    case_all_data = tf.cond(tf.greater(need_to_pad_below, zero), lambda: process_need_to_pad_below(case_all_data, need_to_pad_below), lambda: case_all_data)
+    case_all_data = tf.cond(tf.greater(need_to_pad_above, zero), lambda: process_need_to_pad_above(case_all_data, need_to_pad_above), lambda: case_all_data)
+    case_all_data = tf.reshape(case_all_data, (-1, tf.shape(case_all_data)[-2], tf.shape(case_all_data)[-1]))
+    case_all_data = tf.concat([case_all_data, case_all_seg], axis=0)
+    return case_all_data
+
+@tf.function
+def process_need_to_pad_below(case_all_data, need_to_pad_below):
+    shp_for_pad = tf.shape(case_all_data)
+    shp_for_pad_1 = need_to_pad_below
+    shp_for_pad = update_tf_channel(shp_for_pad, 1, shp_for_pad_1)
+    case_all_data = tf.concat([tf.zeros(shp_for_pad), case_all_data], axis=1)
+    return case_all_data
+
+@tf.function
+def process_need_to_pad_above(case_all_data, need_to_pad_above):
+    shp_for_pad = tf.shape(case_all_data)
+    shp_for_pad_1 = need_to_pad_above
+    shp_for_pad = update_tf_channel(shp_for_pad, 1, shp_for_pad_1)
+    case_all_data = tf.concat([case_all_data, tf.zeros(shp_for_pad)], axis=1)
