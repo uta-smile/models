@@ -410,7 +410,7 @@ class Parser(parser.Parser):
       data_dict = MaskTransform(tf.constant([[0, 0], [1, 0]]), mask_idx_in_seg=0, set_outside_to=0.0)(data_dict)
       data_dict = RemoveLabelTransform(-1, 0)(data_dict)
       data_dict = OneHotTransform(tuple([float(key) for key in self._jsn['labels'].keys()]))(data_dict)
-      tf.print('tr', tf.shape(data_dict.data))
+    #   tf.print('tr', tf.shape(data_dict.data))
       return data_dict.data, data_dict.seg
 
 
@@ -418,7 +418,7 @@ class Parser(parser.Parser):
   def tf_val_transforms(self, images, segs):
       data_dict = RemoveLabelTransform(-1, 0)(TFDAData(data=images, seg=segs))
       data_dict = OneHotTransform(tuple([float(key) for key in self._jsn['labels'].keys()]))(data_dict)
-      tf.print('val', tf.shape(data_dict.data))
+    #   tf.print('val', tf.shape(data_dict.data))
       return data_dict.data, data_dict.seg
 
 
