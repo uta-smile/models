@@ -16,6 +16,7 @@
 
 from typing import Any, Union, Sequence, Mapping, Tuple
 import tensorflow as tf
+import tensorflow_addons as tfa
 
 from official.modeling import tf_utils
 
@@ -88,7 +89,8 @@ class SegmentationHead3D(tf.keras.layers.Layer):
       self._bn_axis = -1
     else:
       self._bn_axis = 1
-    self._activation = tf_utils.get_activation(activation)
+    # self._activation = tf_utils.get_activation(activation)
+    self._activation = tf.keras.layers.LeakyReLU(alpha=1e-2)
 
   def build(self, input_shape: Union[tf.TensorShape, Sequence[tf.TensorShape]]):
     """Creates the variables of the segmentation head."""
@@ -102,14 +104,19 @@ class SegmentationHead3D(tf.keras.layers.Layer):
     }
     final_kernel_size = (1, 1, 1)
 
+    # bn_op = (
+    #     tf.keras.layers.experimental.SyncBatchNormalization
+    #     if self._config_dict['use_sync_bn'] else
+    #     tf.keras.layers.BatchNormalization)
+    # bn_kwargs = {
+    #     'axis': self._bn_axis,
+    #     'momentum': self._config_dict['norm_momentum'],
+    #     'epsilon': self._config_dict['norm_epsilon'],
+    # }
     bn_op = (
-        tf.keras.layers.experimental.SyncBatchNormalization
-        if self._config_dict['use_sync_bn'] else
-        tf.keras.layers.BatchNormalization)
+        tfa.layers.InstanceNormalization)
     bn_kwargs = {
         'axis': self._bn_axis,
-        'momentum': self._config_dict['norm_momentum'],
-        'epsilon': self._config_dict['norm_epsilon'],
     }
 
     # Segmentation head layers.

@@ -18,6 +18,7 @@ from typing import Sequence, Union
 
 # Import libraries
 import tensorflow as tf
+import tensorflow_addons as tfa
 
 from official.modeling import tf_utils
 from official.vision.beta.modeling.layers import nn_layers
@@ -83,15 +84,17 @@ class BasicBlock3DVolume(tf.keras.layers.Layer):
     self._norm_epsilon = norm_epsilon
     self._use_batch_normalization = use_batch_normalization
 
-    if use_sync_bn:
-      self._norm = tf.keras.layers.experimental.SyncBatchNormalization
-    else:
-      self._norm = tf.keras.layers.BatchNormalization
+    # if use_sync_bn:
+    #   self._norm = tf.keras.layers.experimental.SyncBatchNormalization
+    # else:
+    #   self._norm = tf.keras.layers.BatchNormalization
+    self._norm = tfa.layers.InstanceNormalization
     if tf.keras.backend.image_data_format() == 'channels_last':
       self._bn_axis = -1
     else:
       self._bn_axis = 1
-    self._activation_fn = tf_utils.get_activation(activation)
+    # self._activation_fn = tf_utils.get_activation(activation)
+    self._activation_fn = tf.keras.layers.LeakyReLU(alpha=1e-2)
 
   def build(self, input_shape: tf.TensorShape):
     """Builds the basic 3d convolution block."""
@@ -108,9 +111,7 @@ class BasicBlock3DVolume(tf.keras.layers.Layer):
               activation=None))
       self._norms.append(
           self._norm(
-              axis=self._bn_axis,
-              momentum=self._norm_momentum,
-              epsilon=self._norm_epsilon))
+              axis=self._bn_axis,))
 
     super(BasicBlock3DVolume, self).build(input_shape)
 
