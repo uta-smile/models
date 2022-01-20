@@ -13,6 +13,10 @@
 # limitations under the License.
 
 """TensorFlow Model Garden Vision training driver."""
+import tensorflow as tf
+gpus = tf.config.experimental.list_physical_devices('GPU')
+for gpu in gpus:      
+    tf.config.experimental.set_memory_growth(gpu, True)
 
 from absl import app
 import gin  # pylint: disable=unused-import
