@@ -77,8 +77,8 @@ class UNet3D(tf.keras.Model):
 
     self._model_id = model_id
     self._input_specs = input_specs
-    self._pool_size = pool_size
-    self._kernel_size = kernel_size
+    self._pool_size = [[2, 2], [2, 2], [2, 2], [2, 2], [2, 2], [2, 2]]
+    self._kernel_size = [[3, 3], [3, 3], [3, 3], [3, 3], [3, 3], [3, 3], [3, 3]]
     self._activation = activation
     self._base_filters = base_filters
     self._norm_momentum = norm_momentum

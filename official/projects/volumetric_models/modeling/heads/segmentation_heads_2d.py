@@ -21,7 +21,7 @@ from official.modeling import tf_utils
 
 
 @tf.keras.utils.register_keras_serializable(package='Vision')
-class SegmentationHead2D(tf.keras.layers.Layer):
+class SegmentationHead3D(tf.keras.layers.Layer):
   """Segmentation head for 2D input."""
 
   def __init__(self,

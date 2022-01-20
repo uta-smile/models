@@ -20,7 +20,7 @@ import tensorflow as tf
 
 from official.modeling import hyperparams
 from official.projects.volumetric_models.modeling.decoders import factory as decoder_factory
-from official.projects.volumetric_models.modeling.heads import segmentation_heads_3d
+from official.projects.volumetric_models.modeling.heads import segmentation_heads_2d
 from official.vision.beta.modeling import segmentation_model
 from official.vision.beta.modeling.backbones import factory as backbone_factory
 
@@ -44,7 +44,7 @@ def build_segmentation_model_3d(
 
   head_config = model_config.head
 
-  head = segmentation_heads_3d.SegmentationHead3D(
+  head = segmentation_heads_2d.SegmentationHead3D(
       num_classes=model_config.num_classes,
       level=head_config.level,
       num_convs=head_config.num_convs,

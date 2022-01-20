@@ -570,7 +570,7 @@ def process_batch2d(
     label,
     basic_generator_patch_size,
     patch_size,
-    pseud_3d_slices,
+    pseud_3d_slices=1,
     ):
     zero = tf.constant(0, dtype=tf.int64)
     image = tf.cast(image, dtype=tf.float32)
