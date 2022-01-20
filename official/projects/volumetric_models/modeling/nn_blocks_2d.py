@@ -111,9 +111,7 @@ class BasicBlock2DVolume(tf.keras.layers.Layer):
               activation=None))
       self._norms.append(
           self._norm(
-              axis=self._bn_axis,
-              momentum=self._norm_momentum,
-              epsilon=self._norm_epsilon))
+              axis=self._bn_axis))
 
     super(BasicBlock2DVolume, self).build(input_shape)
 
