@@ -4,6 +4,12 @@ import pickle
 import numpy as np
 import tensorflow as tf
 
+# tfrecord feature keys
+IMAGE_KEY = 'image/encoded'
+CLASSIFICATION_LABEL_KEY = 'image/class/label'
+IMAGE_SHAPE_KEY = 'image_shape'
+LABEL_SHAPE_KEY = 'label_shape'
+
 
 def convert_one_sample(data_folder, file_name, save_path, tr_or_val):
     data = np.load(os.path.join(data_folder, (file_name + ".npz")))['data']
@@ -33,27 +39,24 @@ def main(splits_file, fold, data_path, save_path):
     val_keys = splits[fold]['val']
     tr_keys.sort()
     val_keys.sort()
-    for file_name in tr_keys:
+    for i, file_name in enumerate(tr_keys):
+        print("converting training case:", i)
         convert_one_sample(data_path, file_name, save_path, tr_or_val='tr')
-    for file_name in val_keys:
+    for i, file_name in enumerate(val_keys):
+        print("converting validation case:", i)
         convert_one_sample(data_path, file_name, save_path, tr_or_val='val')
+    print("done")
 
 
 if __name__ == '__main__':
-    data_folder = "xxx/nnUNet_preprocessed/Task004_Hippocampus/nnUNetData_plans_v2.1_stage0"
-    splits_file = "xxx/nnUNet_preprocessed/Task004_Hippocampus/splits_final.pkl"
+    preprocessed_task_path = " "
     network_architecture = '3d'  # 2d, 3d
     fold = 0  # 5-fold cross-validation. Fold: 0, 1, 2, 3, 4
 
-    tfrecord_folder_name = network_architecture + '_fold{}'.format(fold)
-    save_path = "xxx/nnUNet_preprocessed/Task004_Hippocampus/" + tfrecord_folder_name
+    data_folder = preprocessed_task_path + "nnUNetData_plans_v2.1_stage0"
+    splits_file = preprocessed_task_path + "splits_final.pkl"
+    save_path = preprocessed_task_path + network_architecture + '_fold{}'.format(fold)
     if not os.path.exists(save_path):
         os.mkdir(save_path)
-
-    # tfrecord feature keys
-    IMAGE_KEY = 'image/encoded'
-    CLASSIFICATION_LABEL_KEY = 'image/class/label'
-    IMAGE_SHAPE_KEY = 'image_shape'
-    LABEL_SHAPE_KEY = 'label_shape'
 
     main(splits_file, fold, data_folder, save_path)
