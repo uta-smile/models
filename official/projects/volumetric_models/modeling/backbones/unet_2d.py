@@ -106,7 +106,7 @@ class UNet3D(tf.keras.Model):
       x2 = nn_blocks_2d.BasicBlock2DVolume(
           filters=[filter_num, filter_num],
           strides=1,
-          kernel_size=self._kernel_size,
+          kernel_size=self._kernel_size[layer_depth],
           kernel_regularizer=self._kernel_regularizer,
           activation=self._activation,
           use_sync_bn=self._use_sync_bn,
@@ -116,7 +116,7 @@ class UNet3D(tf.keras.Model):
               x)
       if layer_depth < model_id - 1:
         x = layers.MaxPool2D(
-            pool_size=self._pool_size,
+            pool_size=self._pool_size[layer_depth],
             padding='valid',
             data_format=tf.keras.backend.image_data_format())(
                 x2)

@@ -105,8 +105,8 @@ class UNet3DDecoder(tf.keras.Model):
       if use_deconvolution:
         x = layers.Conv2DTranspose(
             filters=x.get_shape().as_list()[channel_dim],
-            kernel_size=pool_size,
-            strides=2)(
+            kernel_size=pool_size[layer_depth - 1],
+            strides=pool_size[layer_depth - 1])(
                 x)
       else:
         x = layers.UpSampling2D(size=pool_size[layer_depth - 1])(x)
@@ -118,7 +118,7 @@ class UNet3DDecoder(tf.keras.Model):
       x = nn_blocks_2d.BasicBlock2DVolume(
           filters=[filter_num, filter_num],
           strides=1,
-          kernel_size=kernel_size,
+          kernel_size=kernel_size[layer_depth - 1],
           kernel_regularizer=kernel_regularizer,
           activation=activation,
           use_sync_bn=use_sync_bn,
