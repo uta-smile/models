@@ -197,12 +197,12 @@ class Parser(parser.Parser):
     return image, label
 
   def _data_augmentation_tr(self, image, label):
-    image, label = process_batch2d(image, label[tf.newaxis,], self.basic_generator_patch_size, self.patch_size, 1)
+    image, label = process_batch2d(image, label[tf.newaxis,], self.basic_generator_patch_size, self.patch_size, 0.33, 1)
     image, label = self.tf_tr_transforms(image, label)
     return image[0], label[0]
 
   def _data_augmentation_val(self, image, label):
-    image, label = process_batch2d(image, label[tf.newaxis,], self.patch_size, self.patch_size, 1)
+    image, label = process_batch2d(image, label[tf.newaxis,], self.patch_size, self.patch_size, 0.33, 1)
     image, label = self.tf_val_transforms(image, label)
     return image[0], label[0]
 
