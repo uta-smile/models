@@ -633,3 +633,4 @@ def process_need_to_pad_above(case_all_data, need_to_pad_above):
     shp_for_pad_1 = need_to_pad_above
     shp_for_pad = update_tf_channel(shp_for_pad, 1, shp_for_pad_1)
     case_all_data = tf.concat([case_all_data, tf.zeros(shp_for_pad)], axis=1)
+    return case_all_data
