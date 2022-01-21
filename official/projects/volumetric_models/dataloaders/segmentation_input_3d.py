@@ -602,7 +602,7 @@ def process_batch2d(
 
 @tf.function
 def process_pseud_3d_slices(case_all_data, random_slice, pseud_3d_slices):
-    zero = tf.constant(0, dtype=tf.int64)
+    zero = tf.constant(0, dtype=tf.int32)
     mn = random_slice - (pseud_3d_slices - 1) // 2
     mx = random_slice + (pseud_3d_slices - 1) // 2 + 1
     valid_mn = tf.maximum(mn, zero)
