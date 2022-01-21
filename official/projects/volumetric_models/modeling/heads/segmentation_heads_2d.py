@@ -104,20 +104,20 @@ class SegmentationHead3D(tf.keras.layers.Layer):
     }
     final_kernel_size = 1
 
-    # bn_op = (
-    #     tf.keras.layers.experimental.SyncBatchNormalization
-    #     if self._config_dict['use_sync_bn'] else
-    #     tf.keras.layers.BatchNormalization)
-    # bn_kwargs = {
-    #     'axis': self._bn_axis,
-    #     'momentum': self._config_dict['norm_momentum'],
-    #     'epsilon': self._config_dict['norm_epsilon'],
-    # }
     bn_op = (
-        tfa.layers.InstanceNormalization)
+        tf.keras.layers.experimental.SyncBatchNormalization
+        if self._config_dict['use_sync_bn'] else
+        tf.keras.layers.BatchNormalization)
     bn_kwargs = {
         'axis': self._bn_axis,
+        'momentum': self._config_dict['norm_momentum'],
+        'epsilon': self._config_dict['norm_epsilon'],
     }
+    # bn_op = (
+    #     tfa.layers.InstanceNormalization)
+    # bn_kwargs = {
+    #     'axis': self._bn_axis,
+    # }
 
     # Segmentation head layers.
     self._convs = []

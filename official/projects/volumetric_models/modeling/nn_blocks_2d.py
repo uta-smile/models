@@ -84,11 +84,11 @@ class BasicBlock2DVolume(tf.keras.layers.Layer):
     self._norm_epsilon = norm_epsilon
     self._use_batch_normalization = use_batch_normalization
 
-    # if use_sync_bn:
-    #   self._norm = tf.keras.layers.experimental.SyncBatchNormalization
-    # else:
-    #   self._norm = tf.keras.layers.BatchNormalization
-    self._norm = tfa.layers.InstanceNormalization
+    if use_sync_bn:
+      self._norm = tf.keras.layers.experimental.SyncBatchNormalization
+    else:
+      self._norm = tf.keras.layers.BatchNormalization
+    # self._norm = tfa.layers.InstanceNormalization
     if tf.keras.backend.image_data_format() == 'channels_last':
       self._bn_axis = -1
     else:
@@ -111,7 +111,9 @@ class BasicBlock2DVolume(tf.keras.layers.Layer):
               activation=None))
       self._norms.append(
           self._norm(
-              axis=self._bn_axis))
+              axis=self._bn_axis,
+              momentum=self._norm_momentum,
+              epsilon=self._norm_epsilon))
 
     super(BasicBlock2DVolume, self).build(input_shape)
 
