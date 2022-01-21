@@ -572,7 +572,7 @@ def process_batch2d(
         elems=tf.range(2, dtype=tf.int64),
     )
     need_to_pad = tf.cast(need_to_pad, tf.int64)
-    shape = tf.shape(case_all_data)[1:]
+    shape = tf.shape(case_all_data, out_type=tf.int64)[1:]
     lb_x = -need_to_pad[0] // 2
     ub_x = shape[0] + need_to_pad[0] // 2 + need_to_pad[0] % 2 - basic_generator_patch_size[0]
     lb_y = -need_to_pad[1] // 2
