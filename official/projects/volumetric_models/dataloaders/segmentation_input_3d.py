@@ -361,7 +361,7 @@ class Parser(parser.Parser):
     #   tf.config.run_functions_eagerly(True)
     data_dict = TFDAData(data=images, seg=segs)
     #   tf.print(tf.shape(data_dict.data), tf.shape(data_dict.seg))
-    patch_size = self.patch_size[1:]
+    patch_size = self.patch_size
     #   tf.print(tf.shape(data_dict.data), tf.shape(data_dict.seg))
     #   tf.print(patch_size)
     data_dict = SpatialTransform2D(
