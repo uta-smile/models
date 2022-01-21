@@ -292,7 +292,7 @@ class Parser(parser.Parser):
           )
     else:
       self.do_dummy_2D_aug = TFbF
-      if tf.maximum(self.patch_size) / tf.minimum(self.patch_size) > 1.5:
+      if tf.math.reduce_max(self.patch_size) / tf.math.reduce_min(self.patch_size) > 1.5:
           rotation_x = (
               -15.0 / 360 * 2.0 * pi,
               15.0 / 360 * 2.0 * pi,
