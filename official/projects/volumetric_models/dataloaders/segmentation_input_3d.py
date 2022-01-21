@@ -27,7 +27,7 @@ from tfda.transforms.custom_transforms import MaskTransform, OneHotTransform, Co
 from tfda.transforms.utility_transforms import RemoveLabelTransform
 from tfda.transforms.resample_transforms import SimulateLowResolutionTransform, SimulateLowResolutionTransform2D
 from tfda.defs import TFDAData, TFDADefault3DParams, DTFT, TFbF, TFbT, nan, pi
-from tfda.data_processing_utils import get_batch_size, update_tf_channel
+from tfda.data_processing_utils import get_batch_size, update_tf_channel, random_choice
 
 
 class Decoder(decoder.Decoder):
@@ -553,13 +553,77 @@ def process_batch2d(
     label,
     basic_generator_patch_size,
     patch_size,
-    pseud_3d_slices,
+    oversample_foreground_percent,
+    pseud_3d_slices=1,
     ):
+    force_fg = tf.logical_not(tf.less(tf.random.uniform([]), oversample_foreground_percent))
+
+    return tf.cond(force_fg, lambda: do_force_fg(image, label, basic_generator_patch_size, patch_size, pseud_3d_slices),
+                not_do_force_fg(image, label, basic_generator_patch_size, patch_size, pseud_3d_slices))
+
+@tf.function
+def do_force_fg(image, label, basic_generator_patch_size, patch_size, pseud_3d_slices=1):
     zero = tf.constant(0, dtype=tf.int64)
     image = tf.cast(image, dtype=tf.float32)
     label = tf.cast(label, dtype=tf.float32)
     case_all_data = tf.concat([image, label], axis=0)
     case_all_data = tf.cond(tf.equal(tf.rank(case_all_data), 3), lambda: case_all_data[:, tf.newaxis], lambda: case_all_data)
+
+    voxel_of_all_classes = tf.where(tf.logical_not(tf.equal(label, 0.)))
+    valid_slices, _ = tf.unique(voxel_of_all_classes[:, 0])
+    random_slice = random_choice(valid_slices, 0)[0]
+    voxel_of_all_classes = tf.gather(voxel_of_all_classes, tf.where(tf.equal(voxel_of_all_classes[:,0], random_slice)), axis=0)
+    voxel_of_all_classes = voxel_of_all_classes[:, 1:]
+
+    # random_slice = tf.random.uniform([], minval=0, maxval=tf.shape(case_all_data)[1], dtype=tf.int32)
+    case_all_data = tf.cond(tf.equal(pseud_3d_slices, 1), lambda: case_all_data[:, random_slice], lambda: process_pseud_3d_slices(case_all_data, random_slice, pseud_3d_slices))
+    basic_generator_patch_size = tf.cast(basic_generator_patch_size, dtype=tf.int64)
+    patch_size = tf.cast(patch_size, dtype=tf.int64)
+    need_to_pad = basic_generator_patch_size - patch_size
+    need_to_pad = tf.map_fn(
+        lambda d: update_need_to_pad(
+            need_to_pad, d, basic_generator_patch_size, case_all_data
+        ),
+        elems=tf.range(2, dtype=tf.int64),
+    )
+    need_to_pad = tf.cast(need_to_pad, tf.int64)
+    shape = tf.shape(case_all_data, out_type=tf.int64)[1:]
+    lb_x = -need_to_pad[0] // 2
+    # ub_x = shape[0] + need_to_pad[0] // 2 + need_to_pad[0] % 2 - basic_generator_patch_size[0]
+    lb_y = -need_to_pad[1] // 2
+    # ub_y = shape[1] + need_to_pad[1] // 2 + need_to_pad[1] % 2 - basic_generator_patch_size[1]
+
+    # force_fg = True
+    seleced_voxel = random_choice(voxel_of_all_classes, 0)[0]
+    bbox_x_lb = tf.maximum(lb_x, seleced_voxel[0] - basic_generator_patch_size[0] // 2)
+    bbox_y_lb = tf.maximum(lb_y, seleced_voxel[1] - basic_generator_patch_size[1] // 2)
+
+    bbox_x_ub = bbox_x_lb + basic_generator_patch_size[0]
+    bbox_y_ub = bbox_y_lb + basic_generator_patch_size[1]
+    valid_bbox_x_lb = tf.maximum(zero, bbox_x_lb)
+    valid_bbox_x_ub = tf.minimum(shape[0], bbox_x_ub)
+    valid_bbox_y_lb = tf.maximum(zero, bbox_y_lb)
+    valid_bbox_y_ub = tf.minimum(shape[1], bbox_y_ub)
+    case_all_data = case_all_data[:, valid_bbox_x_lb: valid_bbox_x_ub,
+                                valid_bbox_y_lb: valid_bbox_y_ub]
+    case_all_data_donly = tf.pad(case_all_data[:-1], [[0, 0],
+                                                    [-tf.minimum(zero, bbox_x_lb), tf.maximum(bbox_x_ub - shape[0], zero)],
+                                                    [-tf.minimum(zero, bbox_y_lb), tf.maximum(bbox_y_ub - shape[1], zero)]])
+    case_all_data_segonly = tf.pad(case_all_data[-1:], [[0, 0],
+                                                        [-tf.minimum(zero, bbox_x_lb), tf.maximum(bbox_x_ub - shape[0], zero)],
+                                                        [-tf.minimum(zero, bbox_y_lb), tf.maximum(bbox_y_ub - shape[1], zero)]],
+                                constant_values=-1)
+
+    return case_all_data_donly[tf.newaxis,], case_all_data_segonly[tf.newaxis,]
+
+@tf.function
+def not_do_force_fg(image, label, basic_generator_patch_size, patch_size, pseud_3d_slices=1):
+    zero = tf.constant(0, dtype=tf.int64)
+    image = tf.cast(image, dtype=tf.float32)
+    label = tf.cast(label, dtype=tf.float32)
+    case_all_data = tf.concat([image, label], axis=0)
+    case_all_data = tf.cond(tf.equal(tf.rank(case_all_data), 3), lambda: case_all_data[:, tf.newaxis], lambda: case_all_data)
+
     random_slice = tf.random.uniform([], minval=0, maxval=tf.shape(case_all_data)[1], dtype=tf.int32)
     case_all_data = tf.cond(tf.equal(pseud_3d_slices, 1), lambda: case_all_data[:, random_slice], lambda: process_pseud_3d_slices(case_all_data, random_slice, pseud_3d_slices))
     basic_generator_patch_size = tf.cast(basic_generator_patch_size, dtype=tf.int64)
@@ -578,7 +642,7 @@ def process_batch2d(
     lb_y = -need_to_pad[1] // 2
     ub_y = shape[1] + need_to_pad[1] // 2 + need_to_pad[1] % 2 - basic_generator_patch_size[1]
 
-    #TODO force_fg = False
+    #force_fg = False
     bbox_x_lb = tf.random.uniform([], minval=lb_x, maxval=ub_x+1, dtype=tf.int64)
     bbox_y_lb = tf.random.uniform([], minval=lb_y, maxval=ub_y+1, dtype=tf.int64)
 
