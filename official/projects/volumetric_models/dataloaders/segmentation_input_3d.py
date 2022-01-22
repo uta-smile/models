@@ -572,6 +572,7 @@ def do_force_fg(image, label, basic_generator_patch_size, patch_size, pseud_3d_s
     voxel_of_all_classes = tf.where(tf.logical_not(tf.equal(label, 0.)))
     valid_slices, _ = tf.unique(voxel_of_all_classes[:, 0])
     random_slice = random_choice(valid_slices, 0)[0]
+    random_slice = tf.cast(random_slice, tf.int32)
     voxel_of_all_classes = tf.gather(voxel_of_all_classes, tf.where(tf.equal(voxel_of_all_classes[:,0], random_slice)), axis=0)
     voxel_of_all_classes = voxel_of_all_classes[:, 1:]
 
