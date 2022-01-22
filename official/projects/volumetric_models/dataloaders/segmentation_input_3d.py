@@ -569,10 +569,10 @@ def do_force_fg(image, label, basic_generator_patch_size, patch_size, pseud_3d_s
     case_all_data = tf.concat([image, label], axis=0)
     case_all_data = tf.cond(tf.equal(tf.rank(case_all_data), 3), lambda: case_all_data[:, tf.newaxis], lambda: case_all_data)
 
-    voxel_of_all_classes = tf.where(tf.logical_not(tf.equal(label, 0.)))
+    voxel_of_all_classes = tf.where(tf.logical_not(tf.equal(label[0], 0.)))
     valid_slices, _ = tf.unique(voxel_of_all_classes[:, 0])
     random_slice = random_choice(valid_slices, 0)[0]
-    voxel_of_all_classes = tf.gather(voxel_of_all_classes, tf.where(tf.equal(voxel_of_all_classes[:,0], random_slice)), axis=0)
+    voxel_of_all_classes = tf.gather(voxel_of_all_classes, tf.where(tf.equal(voxel_of_all_classes[:,0], random_slice)), axis=0)[:, 0]
     voxel_of_all_classes = voxel_of_all_classes[:, 1:]
 
     # random_slice = tf.random.uniform([], minval=0, maxval=tf.shape(case_all_data)[1], dtype=tf.int32)
@@ -699,3 +699,15 @@ def process_need_to_pad_above(case_all_data, need_to_pad_above):
     shp_for_pad = update_tf_channel(shp_for_pad, 1, shp_for_pad_1)
     case_all_data = tf.concat([case_all_data, tf.zeros(shp_for_pad)], axis=1)
     return case_all_data
+
+
+if __name__ == "__main__":
+    a = tf.range(27)
+    a = tf.reshape(a, (3, 3, 3))
+    voxel_of_all_classes = tf.where(tf.logical_not(tf.equal(a, 0)))
+    valid_slices, _ = tf.unique(voxel_of_all_classes[:, 0])
+    random_slice = random_choice(valid_slices, 0)[0]
+    voxel_of_all_classes = tf.gather(voxel_of_all_classes, tf.where(tf.equal(voxel_of_all_classes[:,0], random_slice)), axis=0)[:, 0]
+    voxel_of_all_classes = voxel_of_all_classes[:, 1:]
+    seleced_voxel = random_choice(voxel_of_all_classes, 0)[0]
+    print(seleced_voxel)
