@@ -559,7 +559,7 @@ def process_batch2d(
     force_fg = tf.logical_not(tf.less(tf.random.uniform([]), oversample_foreground_percent))
 
     return tf.cond(force_fg, lambda: do_force_fg(image, label, basic_generator_patch_size, patch_size, pseud_3d_slices),
-                not_do_force_fg(image, label, basic_generator_patch_size, patch_size, pseud_3d_slices))
+                lambda: not_do_force_fg(image, label, basic_generator_patch_size, patch_size, pseud_3d_slices))
 
 @tf.function
 def do_force_fg(image, label, basic_generator_patch_size, patch_size, pseud_3d_slices=1):
