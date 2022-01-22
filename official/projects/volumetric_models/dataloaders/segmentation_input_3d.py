@@ -386,14 +386,14 @@ class Parser(parser.Parser):
 
     data_dict = SimulateLowResolutionTransform2D(zoom_range=(0.5, 1), per_channel=True, p_per_channel=0.5,
                                                  order_downsample=0, order_upsample=3, p_per_sample=0.25)(data_dict)
-
+    # tf.print(data_dict)
     data_dict = GammaTransform(self.data_aug_param.get("gamma_range"), True, True, retain_stats=self.data_aug_param.get("gamma_retain_stats"), p_per_sample=0.1)(data_dict)
     data_dict = GammaTransform(self.data_aug_param.get("gamma_range"), False, True, retain_stats=self.data_aug_param.get("gamma_retain_stats"), p_per_sample=self.data_aug_param.get("p_gamma"))(data_dict)
     data_dict = MirrorTransform2D(self.data_aug_param.get("mirror_axes"))(data_dict)
     data_dict = MaskTransform(tf.constant([[0, 0]]), mask_idx_in_seg=0, set_outside_to=0.0)(data_dict)
     data_dict = RemoveLabelTransform(-1, 0)(data_dict)
     data_dict = OneHotTransform2D(tuple([float(key) for key in self._jsn['labels'].keys()]))(data_dict)
-    #   tf.print('tr', tf.shape(data_dict.data))
+    # tf.print('tr', tf.shape(data_dict.data))
     return data_dict.data, data_dict.seg
 
 
@@ -401,7 +401,7 @@ class Parser(parser.Parser):
   def tf_val_transforms(self, images, segs):
     data_dict = RemoveLabelTransform(-1, 0)(TFDAData(data=images, seg=segs))
     data_dict = OneHotTransform2D(tuple([float(key) for key in self._jsn['labels'].keys()]))(data_dict)
-    #   tf.print('val', tf.shape(data_dict.data))
+    # tf.print('val', tf.shape(data_dict.data), data_dict)
     return data_dict.data, data_dict.seg
 
 

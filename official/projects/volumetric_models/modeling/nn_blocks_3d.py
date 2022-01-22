@@ -210,7 +210,8 @@ class ResidualBlock3DVolume(tf.keras.layers.Layer):
       self._bn_axis = -1
     else:
       self._bn_axis = 1
-    self._activation_fn = tf_utils.get_activation(activation)
+    # self._activation_fn = tf_utils.get_activation(activation)
+    self._activation_fn = tf.keras.layers.LeakyReLU(alpha=1e-2)
 
   def build(self, input_shape):
     if self._use_projection:
