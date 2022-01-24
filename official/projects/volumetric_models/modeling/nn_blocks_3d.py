@@ -112,10 +112,11 @@ class BasicBlock3DVolume(tf.keras.layers.Layer):
               data_format=tf.keras.backend.image_data_format(),
               activation=None))
       self._norms.append(
-          self._norm(
-              axis=self._bn_axis,
-              momentum=self._norm_momentum,
-              epsilon=self._norm_epsilon))
+          # self._norm(
+          #     axis=self._bn_axis,
+          #     momentum=self._norm_momentum,
+          #     epsilon=self._norm_epsilon))
+          self._norm(axis=self._bn_axis))
 
     super(BasicBlock3DVolume, self).build(input_shape)
 
