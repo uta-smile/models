@@ -87,13 +87,13 @@ task:
     input_path: ''  ###
     input_size: [40, 56, 40]  #
     is_training: true
-    jsn_path: ''  ###
+    # jsn_path: ''  ###
     label_dtype: float32
     label_field_key: image/class/label
     num_channels: 1  #
     num_classes: 3  #
     output_size: []
-    plans_file: ''  ###
+    # plans_file: ''  ###
     seed: null
     sharding: true
     shuffle_buffer_size: 100
@@ -119,13 +119,13 @@ task:
     input_path: ''  ###
     input_size: [40, 56, 40]  #
     is_training: false
-    jsn_path: ''  ###
+    # jsn_path: ''  ###
     label_dtype: float32
     label_field_key: image/class/label
     num_channels: 1  #
     num_classes: 3  #
     output_size: []
-    plans_file: ''  ###
+    # plans_file: ''  ###
     seed: null
     sharding: true
     shuffle_buffer_size: 1000
