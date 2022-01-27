@@ -70,8 +70,29 @@ class UNet3DDecoder(tf.keras.Model):
         amount memory required during training. Default to False.
       **kwargs: Keyword arguments to be passed.
     """
-    pool_size = [(2, 2, 2), (2, 2, 2), (2, 2, 2)]
-    kernel_size = [(3, 3, 3), (3, 3, 3), (3, 3, 3), (3, 3, 3)]
+
+    if pool_size == 1:
+      pool_size = [(2, 2, 2), (2, 2, 2), (2, 2, 2), (2, 2, 2), (2, 2, 2)]
+      kernel_size = [(3, 3, 3), (3, 3, 3), (3, 3, 3), (3, 3, 3), (3, 3, 3), (3, 3, 3)]
+    elif pool_size == 2:
+      pool_size = [(2, 2, 2), (2, 2, 2), (2, 2, 2), (2, 2, 2), (1, 2, 2)]
+      kernel_size = [(3, 3, 3), (3, 3, 3), (3, 3, 3), (3, 3, 3), (3, 3, 3), (3, 3, 3)]
+    elif pool_size == 3:
+      pool_size = [(2, 2, 2), (2, 2, 2), (2, 2, 2), (2, 2, 2), (2, 2, 2)]
+      kernel_size = [(3, 3, 3), (3, 3, 3), (3, 3, 3), (3, 3, 3), (3, 3, 3), (3, 3, 3)]
+    elif pool_size == 4:
+      pool_size = [(2, 2, 2), (2, 2, 2), (2, 2, 2)]
+      kernel_size = [(3, 3, 3), (3, 3, 3), (3, 3, 3), (3, 3, 3)]
+    elif pool_size == 5:
+      pool_size = [(1, 2, 2), (1, 2, 2), (2, 2, 2), (2, 2, 2), (1, 2, 2), (1, 2, 2)]
+      kernel_size = [(1, 3, 3), (1, 3, 3), (3, 3, 3), (3, 3, 3), (3, 3, 3), (3, 3, 3), (3, 3, 3)]
+    elif pool_size == 6:
+      pool_size = [(2, 2, 2), (2, 2, 2), (2, 2, 2), (2, 2, 2), (1, 2, 2)]
+      kernel_size = [(3, 3, 3), (3, 3, 3), (3, 3, 3), (3, 3, 3), (3, 3, 3), (3, 3, 3)]
+    elif pool_size == 7:
+      pool_size = [(1, 2, 2), (2, 2, 2), (2, 2, 2), (2, 2, 2), (1, 2, 2)]
+      kernel_size = [(1, 3, 3), (3, 3, 3), (3, 3, 3), (3, 3, 3), (3, 3, 3), (3, 3, 3)]  
+
     self._config_dict = {
         'model_id': model_id,
         'input_specs': input_specs,

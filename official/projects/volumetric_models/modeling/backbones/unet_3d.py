@@ -77,8 +77,6 @@ class UNet3D(tf.keras.Model):
 
     self._model_id = model_id
     self._input_specs = input_specs
-    self._pool_size = [(2, 2, 2), (2, 2, 2), (2, 2, 2)]
-    self._kernel_size = [(3, 3, 3), (3, 3, 3), (3, 3, 3), (3, 3, 3)]
     self._activation = activation
     self._base_filters = base_filters
     self._norm_momentum = norm_momentum
@@ -90,6 +88,28 @@ class UNet3D(tf.keras.Model):
       self._norm = layers.BatchNormalization
     self._kernel_regularizer = kernel_regularizer
     self._use_batch_normalization = use_batch_normalization
+
+    if pool_size == 1:
+      self._pool_size = [(2, 2, 2), (2, 2, 2), (2, 2, 2), (2, 2, 2), (2, 2, 2)]
+      self._kernel_size = [(3, 3, 3), (3, 3, 3), (3, 3, 3), (3, 3, 3), (3, 3, 3), (3, 3, 3)]
+    elif pool_size == 2:
+      self._pool_size = [(2, 2, 2), (2, 2, 2), (2, 2, 2), (2, 2, 2), (1, 2, 2)]
+      self._kernel_size = [(3, 3, 3), (3, 3, 3), (3, 3, 3), (3, 3, 3), (3, 3, 3), (3, 3, 3)]
+    elif pool_size == 3:
+      self._pool_size = [(2, 2, 2), (2, 2, 2), (2, 2, 2), (2, 2, 2), (2, 2, 2)]
+      self._kernel_size = [(3, 3, 3), (3, 3, 3), (3, 3, 3), (3, 3, 3), (3, 3, 3), (3, 3, 3)]
+    elif pool_size == 4:
+      self._pool_size = [(2, 2, 2), (2, 2, 2), (2, 2, 2)]
+      self._kernel_size = [(3, 3, 3), (3, 3, 3), (3, 3, 3), (3, 3, 3)]
+    elif pool_size == 5:
+      self._pool_size = [(1, 2, 2), (1, 2, 2), (2, 2, 2), (2, 2, 2), (1, 2, 2), (1, 2, 2)]
+      self._kernel_size = [(1, 3, 3), (1, 3, 3), (3, 3, 3), (3, 3, 3), (3, 3, 3), (3, 3, 3), (3, 3, 3)]
+    elif pool_size == 6:
+      self._pool_size = [(2, 2, 2), (2, 2, 2), (2, 2, 2), (2, 2, 2), (1, 2, 2)]
+      self._kernel_size = [(3, 3, 3), (3, 3, 3), (3, 3, 3), (3, 3, 3), (3, 3, 3), (3, 3, 3)]
+    elif pool_size == 7:
+      self._pool_size = [(1, 2, 2), (2, 2, 2), (2, 2, 2), (2, 2, 2), (1, 2, 2)]
+      self._kernel_size = [(1, 3, 3), (3, 3, 3), (3, 3, 3), (3, 3, 3), (3, 3, 3), (3, 3, 3)]
 
     # Build 3D UNet.
     inputs = tf.keras.Input(
