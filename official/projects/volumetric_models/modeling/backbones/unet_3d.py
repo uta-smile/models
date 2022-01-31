@@ -38,8 +38,8 @@ class UNet3D(tf.keras.Model):
       self,
       model_id: int,
       input_specs: layers = layers.InputSpec(shape=[None, None, None, None, 3]),
-      pool_size: Sequence[int] = (2, 2, 2),
-      kernel_size: Sequence[int] = (3, 3, 3),
+      pool_size: Sequence[int] = 2,
+      kernel_size: Sequence[int] = 3,
       base_filters: int = 32,
       kernel_regularizer: tf.keras.regularizers.Regularizer = None,
       activation: str = 'relu',
@@ -90,26 +90,26 @@ class UNet3D(tf.keras.Model):
     self._use_batch_normalization = use_batch_normalization
 
     if pool_size == 1:
-      self._pool_size = [(2, 2, 2), (2, 2, 2), (2, 2, 2), (2, 2, 2), (2, 2, 2)]
-      self._kernel_size = [(3, 3, 3), (3, 3, 3), (3, 3, 3), (3, 3, 3), (3, 3, 3), (3, 3, 3)]
+      self._pool_size = [(2, 2), (2, 2), (2, 2), (2, 2), (2, 2)]
+      self._kernel_size = [(3, 3), (3, 3), (3, 3), (3, 3), (3, 3), (3, 3)]
     elif pool_size == 2:
-      self._pool_size = [(2, 2, 2), (2, 2, 2), (2, 2, 2), (2, 2, 2), (1, 2, 2)]
-      self._kernel_size = [(3, 3, 3), (3, 3, 3), (3, 3, 3), (3, 3, 3), (3, 3, 3), (3, 3, 3)]
+      self._pool_size = [(2, 2), (2, 2), (2, 2), (2, 2), (2, 2), (2, 1)]
+      self._kernel_size = [(3, 3), (3, 3), (3, 3), (3, 3), (3, 3), (3, 3), (3, 3)]
     elif pool_size == 3:
-      self._pool_size = [(2, 2, 2), (2, 2, 2), (2, 2, 2), (2, 2, 2), (2, 2, 2)]
-      self._kernel_size = [(3, 3, 3), (3, 3, 3), (3, 3, 3), (3, 3, 3), (3, 3, 3), (3, 3, 3)]
+      self._pool_size = [(2, 2), (2, 2), (2, 2), (2, 2), (2, 2), (2, 2), (2, 2)]
+      self._kernel_size = [(3, 3), (3, 3), (3, 3), (3, 3), (3, 3), (3, 3), (3, 3), (3, 3)]
     elif pool_size == 4:
-      self._pool_size = [(2, 2, 2), (2, 2, 2), (2, 2, 2)]
-      self._kernel_size = [(3, 3, 3), (3, 3, 3), (3, 3, 3), (3, 3, 3)]
+      self._pool_size = [(2, 2), (2, 2), (2, 2)]
+      self._kernel_size = [(3, 3), (3, 3), (3, 3), (3, 3)]
     elif pool_size == 5:
-      self._pool_size = [(1, 2, 2), (1, 2, 2), (2, 2, 2), (2, 2, 2), (1, 2, 2), (1, 2, 2)]
-      self._kernel_size = [(1, 3, 3), (1, 3, 3), (3, 3, 3), (3, 3, 3), (3, 3, 3), (3, 3, 3), (3, 3, 3)]
+      self._pool_size = [(2, 2), (2, 2), (2, 2), (2, 2), (2, 2), (2, 2)]
+      self._kernel_size = [(3, 3), (3, 3), (3, 3), (3, 3), (3, 3), (3, 3), (3, 3)]
     elif pool_size == 6:
-      self._pool_size = [(2, 2, 2), (2, 2, 2), (2, 2, 2), (2, 2, 2), (1, 2, 2)]
-      self._kernel_size = [(3, 3, 3), (3, 3, 3), (3, 3, 3), (3, 3, 3), (3, 3, 3), (3, 3, 3)]
+      self._pool_size = [(2, 2), (2, 2), (2, 2), (2, 2), (2, 2), (2, 2), (2, 2)]
+      self._kernel_size = [(3, 3), (3, 3), (3, 3), (3, 3), (3, 3), (3, 3), (3, 3), (3, 3)]
     elif pool_size == 7:
-      self._pool_size = [(1, 2, 2), (2, 2, 2), (2, 2, 2), (2, 2, 2), (1, 2, 2)]
-      self._kernel_size = [(1, 3, 3), (3, 3, 3), (3, 3, 3), (3, 3, 3), (3, 3, 3), (3, 3, 3)]
+      self._pool_size = [(2, 2), (2, 2), (2, 2), (2, 2), (2, 2), (2, 2), (2, 2)]
+      self._kernel_size = [(3, 3), (3, 3), (3, 3), (3, 3), (3, 3), (3, 3), (3, 3), (3, 3)]
 
     # Build 3D UNet.
     inputs = tf.keras.Input(
@@ -123,9 +123,9 @@ class UNet3D(tf.keras.Model):
       filter_num = base_filters * (2**layer_depth)
       if filter_num > 320:
           filter_num = 320
-      x2 = nn_blocks_3d.BasicBlock3DVolume(
+      x2 = nn_blocks_3d.BasicBlock2DVolume(
           filters=[filter_num, filter_num],
-          strides=(1, 1, 1),
+          strides=1,
           kernel_size=self._kernel_size[layer_depth],
           kernel_regularizer=self._kernel_regularizer,
           activation=self._activation,
@@ -135,7 +135,7 @@ class UNet3D(tf.keras.Model):
           use_batch_normalization=self._use_batch_normalization)(
               x)
       if layer_depth < model_id - 1:
-        x = layers.MaxPool3D(
+        x = layers.MaxPool2D(
             pool_size=self._pool_size[layer_depth],
             padding='valid',
             data_format=tf.keras.backend.image_data_format())(

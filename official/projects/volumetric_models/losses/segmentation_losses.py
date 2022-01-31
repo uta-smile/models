@@ -36,7 +36,7 @@ class SegmentationLossDiceScore(object):
 
   def __init__(self,
                metric_type: Optional[str] = None,
-               axis: Optional[Sequence[int]] = (1, 2, 3)):
+               axis: Optional[Sequence[int]] = (0, 1, 2)):
     """Initializes dice score loss object.
 
     Args:

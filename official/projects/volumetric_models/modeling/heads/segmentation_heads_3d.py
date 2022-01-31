@@ -92,15 +92,15 @@ class SegmentationHead3D(tf.keras.layers.Layer):
 
   def build(self, input_shape: Union[tf.TensorShape, Sequence[tf.TensorShape]]):
     """Creates the variables of the segmentation head."""
-    conv_op = tf.keras.layers.Conv3D
+    conv_op = tf.keras.layers.Conv2D
     conv_kwargs = {
-        'kernel_size': (3, 3, 3),
+        'kernel_size': 3,
         'padding': 'same',
         'use_bias': False,
         'kernel_initializer': tf.keras.initializers.RandomNormal(stddev=0.01),
         'kernel_regularizer': self._config_dict['kernel_regularizer'],
     }
-    final_kernel_size = (1, 1, 1)
+    final_kernel_size = 1
 
     bn_op = (
         tf.keras.layers.experimental.SyncBatchNormalization

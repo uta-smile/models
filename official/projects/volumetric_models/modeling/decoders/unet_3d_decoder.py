@@ -37,8 +37,8 @@ class UNet3DDecoder(tf.keras.Model):
   def __init__(self,
                model_id: int,
                input_specs: Mapping[str, tf.TensorShape],
-               pool_size: Sequence[int] = (2, 2, 2),
-               kernel_size: Sequence[int] = (3, 3, 3),
+               pool_size: Sequence[int] = 2,
+               kernel_size: Sequence[int] = 3,
                kernel_regularizer: tf.keras.regularizers.Regularizer = None,
                activation: str = 'relu',
                norm_momentum: float = 0.99,
@@ -72,26 +72,26 @@ class UNet3DDecoder(tf.keras.Model):
     """
 
     if pool_size == 1:
-      pool_size = [(2, 2, 2), (2, 2, 2), (2, 2, 2), (2, 2, 2), (2, 2, 2)]
-      kernel_size = [(3, 3, 3), (3, 3, 3), (3, 3, 3), (3, 3, 3), (3, 3, 3), (3, 3, 3)]
+      pool_size = [(2, 2), (2, 2), (2, 2), (2, 2), (2, 2)]
+      kernel_size = [(3, 3), (3, 3), (3, 3), (3, 3), (3, 3), (3, 3)]
     elif pool_size == 2:
-      pool_size = [(2, 2, 2), (2, 2, 2), (2, 2, 2), (2, 2, 2), (1, 2, 2)]
-      kernel_size = [(3, 3, 3), (3, 3, 3), (3, 3, 3), (3, 3, 3), (3, 3, 3), (3, 3, 3)]
+      pool_size = [(2, 2), (2, 2), (2, 2), (2, 2), (2, 2), (2, 1)]
+      kernel_size = [(3, 3), (3, 3), (3, 3), (3, 3), (3, 3), (3, 3), (3, 3)]
     elif pool_size == 3:
-      pool_size = [(2, 2, 2), (2, 2, 2), (2, 2, 2), (2, 2, 2), (2, 2, 2)]
-      kernel_size = [(3, 3, 3), (3, 3, 3), (3, 3, 3), (3, 3, 3), (3, 3, 3), (3, 3, 3)]
+      pool_size = [(2, 2), (2, 2), (2, 2), (2, 2), (2, 2), (2, 2), (2, 2)]
+      kernel_size = [(3, 3), (3, 3), (3, 3), (3, 3), (3, 3), (3, 3), (3, 3), (3, 3)]
     elif pool_size == 4:
-      pool_size = [(2, 2, 2), (2, 2, 2), (2, 2, 2)]
-      kernel_size = [(3, 3, 3), (3, 3, 3), (3, 3, 3), (3, 3, 3)]
+      pool_size = [(2, 2), (2, 2), (2, 2)]
+      kernel_size = [(3, 3), (3, 3), (3, 3), (3, 3)]
     elif pool_size == 5:
-      pool_size = [(1, 2, 2), (1, 2, 2), (2, 2, 2), (2, 2, 2), (1, 2, 2), (1, 2, 2)]
-      kernel_size = [(1, 3, 3), (1, 3, 3), (3, 3, 3), (3, 3, 3), (3, 3, 3), (3, 3, 3), (3, 3, 3)]
+      pool_size = [(2, 2), (2, 2), (2, 2), (2, 2), (2, 2), (2, 2)]
+      kernel_size = [(3, 3), (3, 3), (3, 3), (3, 3), (3, 3), (3, 3), (3, 3)]
     elif pool_size == 6:
-      pool_size = [(2, 2, 2), (2, 2, 2), (2, 2, 2), (2, 2, 2), (1, 2, 2)]
-      kernel_size = [(3, 3, 3), (3, 3, 3), (3, 3, 3), (3, 3, 3), (3, 3, 3), (3, 3, 3)]
+      pool_size = [(2, 2), (2, 2), (2, 2), (2, 2), (2, 2), (2, 2), (2, 2)]
+      kernel_size = [(3, 3), (3, 3), (3, 3), (3, 3), (3, 3), (3, 3), (3, 3), (3, 3)]
     elif pool_size == 7:
-      pool_size = [(1, 2, 2), (2, 2, 2), (2, 2, 2), (2, 2, 2), (1, 2, 2)]
-      kernel_size = [(1, 3, 3), (3, 3, 3), (3, 3, 3), (3, 3, 3), (3, 3, 3), (3, 3, 3)]  
+      pool_size = [(2, 2), (2, 2), (2, 2), (2, 2), (2, 2), (2, 2), (2, 2)]
+      kernel_size = [(3, 3), (3, 3), (3, 3), (3, 3), (3, 3), (3, 3), (3, 3), (3, 3)]
 
     self._config_dict = {
         'model_id': model_id,
@@ -125,21 +125,21 @@ class UNet3DDecoder(tf.keras.Model):
     for layer_depth in range(model_id - 1, 0, -1):
       # Apply deconvolution or upsampling.
       if use_deconvolution:
-        x = layers.Conv3DTranspose(
+        x = layers.Conv2DTranspose(
             filters=x.get_shape().as_list()[channel_dim],
             kernel_size=pool_size[layer_depth - 1],
             strides=pool_size[layer_depth - 1])(
                 x)
       else:
-        x = layers.UpSampling3D(size=pool_size[layer_depth - 1])(x)
+        x = layers.UpSampling2D(size=pool_size[layer_depth - 1])(x)
 
       # Concatenate upsampled features with input features from one layer up.
       x = tf.concat([x, tf.cast(inputs[str(layer_depth)], dtype=x.dtype)],
                     axis=channel_dim)
       filter_num = inputs[str(layer_depth)].get_shape().as_list()[channel_dim]
-      x = nn_blocks_3d.BasicBlock3DVolume(
+      x = nn_blocks_3d.BasicBlock2DVolume(
           filters=[filter_num, filter_num],
-          strides=(1, 1, 1),
+          strides=1,
           kernel_size=kernel_size[layer_depth - 1],
           kernel_regularizer=kernel_regularizer,
           activation=activation,

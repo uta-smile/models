@@ -1,3 +1,4 @@
+3d:
 CUDA_VISIBLE_DEVICES=0 \
 python3 /home/feng/Desktop/models/official/projects/volumetric_models/train.py \
 --experiment=seg_unet3d_test \
