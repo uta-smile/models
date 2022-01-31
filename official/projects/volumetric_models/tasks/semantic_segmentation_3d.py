@@ -24,7 +24,7 @@ from official.core import base_task
 from official.core import input_reader
 from official.core import task_factory
 from official.projects.volumetric_models.configs import semantic_segmentation_3d as exp_cfg
-from official.projects.volumetric_models.dataloaders import segmentation_input_3d_np
+from official.projects.volumetric_models.dataloaders import segmentation_input_3d_t5 as segmentation_input_3d
 from official.projects.volumetric_models.evaluation import segmentation_metrics
 from official.projects.volumetric_models.losses import segmentation_losses
 from official.projects.volumetric_models.modeling import factory
@@ -98,10 +98,10 @@ class SemanticSegmentation3DTask(base_task.Task):
 
   def build_inputs(self, params, input_context=None) -> tf.data.Dataset:
     """Builds classification input."""
-    decoder = segmentation_input_3d_np.Decoder(
+    decoder = segmentation_input_3d.Decoder(
         image_field_key=params.image_field_key,
         label_field_key=params.label_field_key)
-    parser = segmentation_input_3d_np.Parser(
+    parser = segmentation_input_3d.Parser(
         input_size=params.input_size,
         num_classes=params.num_classes,
         num_channels=params.num_channels,

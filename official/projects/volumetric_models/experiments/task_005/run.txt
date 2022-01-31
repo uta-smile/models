@@ -1,0 +1,13 @@
+CUDA_VISIBLE_DEVICES=0 \
+python3 /home/feng/Desktop/models/official/projects/volumetric_models/train.py \
+--experiment=seg_unet3d_test \
+--mode=train_and_eval \
+--config_file=/home/feng/Desktop/models/official/projects/volumetric_models/experiments/task_005/params_3d.yaml \
+--model_dir=/home/feng/Desktop/tf_unet/model_t5_3d_fold0 \
+--params_override="task.train_data.input_path=/home/feng/Desktop/nnunet/nnUNet_preprocessed/Task005_Prostate/3d_fold0/tr*, \
+task.validation_data.input_path=/home/feng/Desktop/nnunet/nnUNet_preprocessed/Task005_Prostate/3d_fold0/val*, \
+trainer.checkpoint_interval=10000, \
+trainer.validation_interval=1, \
+trainer.steps_per_loop=1, \
+trainer.summary_interval=1, \
+trainer.train_steps=2"
