@@ -49,8 +49,8 @@ def main(splits_file, fold, data_path, save_path):
 
 
 if __name__ == '__main__':
-    preprocessed_task_path = "/home/feng/Desktop/nnunet/nnUNet_preprocessed/Task004_Hippocampus/"
-    # preprocessed_task_path = "/home/feng/Desktop/nnunet/nnUNet_preprocessed/Task005_Prostate/"
+    # preprocessed_task_path = "/home/feng/Desktop/nnunet/nnUNet_preprocessed/Task004_Hippocampus/"
+    preprocessed_task_path = "/home/feng/Desktop/nnunet/nnUNet_preprocessed/Task005_Prostate/"
 
     network_architecture = '2d'  # 2d, 3d
     fold = 0  # 5-fold cross-validation. Fold: 0, 1, 2, 3, 4

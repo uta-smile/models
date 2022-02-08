@@ -96,7 +96,7 @@ class BasicBlock3DVolume(tf.keras.layers.Layer):
       self._bn_axis = 1
     
     self._activation_fn = tf_utils.get_activation(activation)
-    # self._activation_fn = tf.keras.layers.LeakyReLU(alpha=1e-2)  # OOM errord 
+    # self._activation_fn = tf.keras.layers.LeakyReLU(alpha=1e-2)  # OOM error
 
   def build(self, input_shape: tf.TensorShape):
     """Builds the basic 3d convolution block."""
