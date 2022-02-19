@@ -4,16 +4,14 @@ python3 /home/feng/Desktop/models/official/projects/volumetric_models/train.py \
 --experiment=seg_unet3d_test \
 --mode=train_and_eval \
 --config_file=/home/feng/Desktop/models/official/projects/volumetric_models/experiments/task_005/params_2d.yaml \
---model_dir=/home/feng/Desktop/tf_unet/model_t5_2d_fold0 \
---params_override="task.train_data.global_batch_size=16, \
-task.validation_data.global_batch_size=16, \
-task.train_data.input_path=/home/feng/Desktop/nnunet/nnUNet_preprocessed/Task005_Prostate/2d_fold0/tr*, \
-task.validation_data.input_path=/home/feng/Desktop/nnunet/nnUNet_preprocessed/Task005_Prostate/2d_fold0/val*, \
-trainer.checkpoint_interval=10000, \
-trainer.validation_interval=1000, \
-trainer.steps_per_loop=1000, \
-trainer.summary_interval=1000, \
-trainer.train_steps=10000"
+--model_dir=/home/feng/Desktop/tf_unet/model_t5_2d_fold4 \
+--params_override="task.train_data.input_path=/home/feng/Desktop/nnunet/nnUNet_preprocessed/Task005_Prostate/2d_fold4/tr*, \
+task.validation_data.input_path=/home/feng/Desktop/nnunet/nnUNet_preprocessed/Task005_Prostate/2d_fold4/val*, \
+trainer.checkpoint_interval=2500, \
+trainer.validation_interval=2500, \
+trainer.steps_per_loop=2500, \
+trainer.summary_interval=2500, \
+trainer.train_steps=25000"
 
 3d:
 CUDA_VISIBLE_DEVICES=0 \
@@ -24,8 +22,8 @@ python3 /home/feng/Desktop/models/official/projects/volumetric_models/train.py \
 --model_dir=/home/feng/Desktop/tf_unet/model_t5_3d_fold0 \
 --params_override="task.train_data.input_path=/home/feng/Desktop/nnunet/nnUNet_preprocessed/Task005_Prostate/3d_fold0/tr*, \
 task.validation_data.input_path=/home/feng/Desktop/nnunet/nnUNet_preprocessed/Task005_Prostate/3d_fold0/val*, \
-trainer.checkpoint_interval=10000, \
-trainer.validation_interval=1, \
-trainer.steps_per_loop=1, \
-trainer.summary_interval=1, \
-trainer.train_steps=2"
+trainer.checkpoint_interval=2500, \
+trainer.validation_interval=2500, \
+trainer.steps_per_loop=2500, \
+trainer.summary_interval=2500, \
+trainer.train_steps=25000"

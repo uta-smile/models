@@ -52,10 +52,14 @@ if __name__ == '__main__':
     # preprocessed_task_path = "/home/feng/Desktop/nnunet/nnUNet_preprocessed/Task004_Hippocampus/"
     preprocessed_task_path = "/home/feng/Desktop/nnunet/nnUNet_preprocessed/Task005_Prostate/"
 
-    network_architecture = '2d'  # 2d, 3d
-    fold = 0  # 5-fold cross-validation. Fold: 0, 1, 2, 3, 4
+    network_architecture = '3d'  # 2d, 3d
+    fold = 4
+      # 5-fold cross-validation. Fold: 0, 1, 2, 3, 4
 
-    data_folder = preprocessed_task_path + "nnUNetData_plans_v2.1_2D_stage0"
+    if network_architecture == '2d':
+        data_folder = preprocessed_task_path + "nnUNetData_plans_v2.1_2D_stage0"
+    else:
+        data_folder = preprocessed_task_path + "nnUNetData_plans_v2.1_stage0"
     splits_file = preprocessed_task_path + "splits_final.pkl"
     save_path = preprocessed_task_path + network_architecture + '_fold{}'.format(fold)
     if not os.path.exists(save_path):
