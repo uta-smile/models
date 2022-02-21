@@ -40,26 +40,28 @@ def main(splits_file, fold, data_path, save_path):
     tr_keys.sort()
     val_keys.sort()
     for i, file_name in enumerate(tr_keys):
-        print("converting training case:", i)
+        print("fold", fold, "converting training case:", i)
         convert_one_sample(data_path, file_name, save_path, tr_or_val='tr')
     for i, file_name in enumerate(val_keys):
-        print("converting validation case:", i)
+        print("fold", fold, "converting validation case:", i)
         convert_one_sample(data_path, file_name, save_path, tr_or_val='val')
     print("done")
 
 
 if __name__ == '__main__':
-    # preprocessed_task_path = "/home/feng/Desktop/nnunet/nnUNet_preprocessed/Task004_Hippocampus/"
-    preprocessed_task_path = "/home/feng/Desktop/nnunet/nnUNet_preprocessed/Task005_Prostate/"
+    # preprocessed_task_path = "/mnt/SSD1/fengtong/nnunet/nnUNet_preprocessed/Task001_BrainTumour/"
+    # preprocessed_task_path = "/mnt/SSD1/fengtong/nnunet/nnUNet_preprocessed/Task002_Heart/"
+    preprocessed_task_path = "/mnt/SSD1/fengtong/nnunet/nnUNet_preprocessed/Task003_Liver/"
+    # preprocessed_task_path = "/mnt/SSD1/fengtong/nnunet/nnUNet_preprocessed/Task004_Hippocampus/"
+    # preprocessed_task_path = "/mnt/SSD1/fengtong/nnunet/nnUNet_preprocessed/Task005_Prostate/"
+    # preprocessed_task_path = "/mnt/SSD1/fengtong/nnunet/nnUNet_preprocessed/Task006_Lung/"
+    # preprocessed_task_path = "/mnt/SSD1/fengtong/nnunet/nnUNet_preprocessed/Task007_Pancreas/"
 
     network_architecture = '3d'  # 2d, 3d
-    fold = 4
-      # 5-fold cross-validation. Fold: 0, 1, 2, 3, 4
+    # for i in range(5):
+    fold = 0  # 5-fold cross-validation. Fold: 0, 1, 2, 3, 4
 
-    if network_architecture == '2d':
-        data_folder = preprocessed_task_path + "nnUNetData_plans_v2.1_2D_stage0"
-    else:
-        data_folder = preprocessed_task_path + "nnUNetData_plans_v2.1_stage0"
+    data_folder = preprocessed_task_path + "nnUNetData_plans_v2.1_stage1"
     splits_file = preprocessed_task_path + "splits_final.pkl"
     save_path = preprocessed_task_path + network_architecture + '_fold{}'.format(fold)
     if not os.path.exists(save_path):
