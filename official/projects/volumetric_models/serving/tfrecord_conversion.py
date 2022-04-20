@@ -11,7 +11,7 @@ IMAGE_SHAPE_KEY = 'image_shape'
 LABEL_SHAPE_KEY = 'label_shape'
 
 
-def convert_one_sample(data_folder, file_name, save_path, tr_or_val):
+def convert_one_sample(data_folder, fold, file_name, save_path):
     data = np.load(os.path.join(data_folder, (file_name + ".npz")))['data']
     image = data[:-1, :, :, :]
     label = data[-1, :, :, :]
@@ -27,7 +27,9 @@ def convert_one_sample(data_folder, file_name, save_path, tr_or_val):
             int64_list=tf.train.Int64List(value=list(label.shape))))
     }
     tf_example = tf.train.Example(features=tf.train.Features(feature=feature))
-    tfrecord_file = os.path.join(save_path, (tr_or_val + '_' + file_name + '.tfrecord'))
+    # tfrecord_file = os.path.join(save_path, (tr_or_val + '_' + file_name + '.tfrecord'))
+    tfrecord_file = os.path.join(save_path, ('fold{}'.format(fold) + '_val_' + file_name + '.tfrecord'))
+
     with tf.io.TFRecordWriter(tfrecord_file) as writer:
         writer.write(tf_example.SerializeToString())
 
@@ -35,29 +37,42 @@ def convert_one_sample(data_folder, file_name, save_path, tr_or_val):
 def main(splits_file, fold, data_path, save_path):
     with open(splits_file, 'rb') as f:
         splits = pickle.load(f)
-    tr_keys = splits[fold]['train']
+    # tr_keys = splits[fold]['train']
     val_keys = splits[fold]['val']
-    tr_keys.sort()
+    # tr_keys.sort()
     val_keys.sort()
-    for i, file_name in enumerate(tr_keys):
-        print("converting training case:", i)
-        convert_one_sample(data_path, file_name, save_path, tr_or_val='tr')
+    # for i, file_name in enumerate(tr_keys):
+    #     print("converting training case:", i)
+    #     convert_one_sample(data_path, file_name, save_path, tr_or_val='tr')
     for i, file_name in enumerate(val_keys):
-        print("converting validation case:", i)
-        convert_one_sample(data_path, file_name, save_path, tr_or_val='val')
+        print("converting fold", fold, "validation case:", i)
+        # convert_one_sample(data_path, file_name, save_path, tr_or_val='val')
+        convert_one_sample(data_path, fold, file_name, save_path)
     print("done")
 
 
 if __name__ == '__main__':
-    # preprocessed_task_path = "/home/feng/Desktop/nnunet/nnUNet_preprocessed/Task004_Hippocampus/"
-    preprocessed_task_path = "/mnt/SSD1/fengtong/nnunet/nnUNet_preprocessed/Task005_Prostate/"
+    # preprocessed_task_path = "/mnt/SSD1/fengtong/nnunet/nnUNet_preprocessed/Task001_BrainTumour/"
+    preprocessed_task_path = "/mnt/SSD1/fengtong/nnunet/nnUNet_preprocessed/Task002_Heart/"
+    # preprocessed_task_path = "/mnt/SSD1/fengtong/nnunet/nnUNet_preprocessed/Task003_Liver/"
+    # preprocessed_task_path = "/mnt/SSD1/fengtong/nnunet/nnUNet_preprocessed/Task004_Hippocampus/"
+    # preprocessed_task_path = "/mnt/SSD1/fengtong/nnunet/nnUNet_preprocessed/Task005_Prostate/"
+    # preprocessed_task_path = "/mnt/SSD1/fengtong/nnunet/nnUNet_preprocessed/Task006_Lung/"
+    # preprocessed_task_path = "/mnt/SSD1/fengtong/nnunet/nnUNet_preprocessed/Task007_Pancreas/"
+
     network_architecture = '3d'  # 2d, 3d
-    fold = 4  # 5-fold cross-validation. Fold: 0, 1, 2, 3, 4
+    
+    for i in range(5):
+        fold = i  # 5-fold cross-validation. Fold: 0, 1, 2, 3, 4
 
-    data_folder = preprocessed_task_path + "nnUNetData_plans_v2.1_stage0"
-    splits_file = preprocessed_task_path + "splits_final.pkl"
-    save_path = preprocessed_task_path + network_architecture + '_fold{}'.format(fold)
-    if not os.path.exists(save_path):
-        os.mkdir(save_path)
+        # data_folder = preprocessed_task_path + "nnUNetData_plans_v2.1_2D_stage0"  # 2d: all tasks
+        data_folder = preprocessed_task_path + "nnUNetData_plans_v2.1_stage0"  # 3d: task 001, 002, 004, 005
+        # data_folder = preprocessed_task_path + "nnUNetData_plans_v2.1_stage1"  # 3d: task 003, 006, 007
+        
+        splits_file = preprocessed_task_path + "splits_final.pkl"
+        # save_path = preprocessed_task_path + network_architecture + '_fold{}'.format(fold)
+        save_path = "/mnt/SSD2/feng/nnUNet_preprocessed/Task002_Heart/" + network_architecture + "_tfrecord_data"
+        if not os.path.exists(save_path):
+            os.mkdir(save_path)
 
-    main(splits_file, fold, data_folder, save_path)
+        main(splits_file, fold, data_folder, save_path)

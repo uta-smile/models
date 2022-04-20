@@ -31,16 +31,16 @@ task:
       type: unet_3d
       unet_3d:
         base_filters: 32
-        kernel_size: 4  # Task id
-        model_id: 4  #
-        pool_size: 4  # Task id
+        kernel_size: 4  # task id
+        model_id: 4  # model depth
+        pool_size: 4  # task id
         use_batch_normalization: true
     decoder:
       type: unet_3d_decoder
       unet_3d_decoder:
-        kernel_size: 4  # Task id
-        model_id: 4  #
-        pool_size: 4  # Task id
+        kernel_size: 4  # task id
+        model_id: 4  # model depth
+        pool_size: 4  # task id
         use_batch_normalization: true
         use_deconvolution: true
     head:

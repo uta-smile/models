@@ -31,27 +31,27 @@ task:
       type: unet_3d
       unet_3d:
         base_filters: 32
-        kernel_size: 5  # task id
-        model_id: 7  # model depth
-        pool_size: 5  # task id
+        kernel_size: 2  # task id
+        model_id: 6  # model depth
+        pool_size: 2  # task id
         use_batch_normalization: true
     decoder:
       type: unet_3d_decoder
       unet_3d_decoder:
-        kernel_size: 5  # task id
-        model_id: 7  # model depth
-        pool_size: 5  # task id
+        kernel_size: 2  # task id
+        model_id: 6  # model depth
+        pool_size: 2  # task id
         use_batch_normalization: true
         use_deconvolution: true
     head:
       level: 1
-      num_classes: 3  #
+      num_classes: 2  #
       num_convs: 0
       num_filters: 256
       output_logits: true
       upsample_factor: 1
       use_batch_normalization: true
-    input_size: [20, 320, 256]  #
+    input_size: [80, 192, 160]  #
     max_level: 7  #
     min_level: 3
     norm_activation:
@@ -59,8 +59,8 @@ task:
       norm_epsilon: 0.01
       norm_momentum: 0.99
       use_sync_bn: false
-    num_channels: 2  #
-    num_classes: 3  #
+    num_channels: 1  #
+    num_classes: 2  #
   train_data:
     block_length: 1
     cache: false
@@ -73,18 +73,18 @@ task:
     global_batch_size: 2  #
     image_field_key: image/encoded
     input_path: ''  ###
-    input_size: [20, 320, 256]  #
+    input_size: [80, 192, 160]  #
     is_training: true
     # jsn_path: ''  ###
     label_dtype: float32
     label_field_key: image/class/label
-    num_channels: 2  #
-    num_classes: 3  #
+    num_channels: 1  #
+    num_classes: 2  #
     output_size: []
     # plans_file: ''  ###
     seed: null
     sharding: true
-    shuffle_buffer_size: 100
+    shuffle_buffer_size: 20
     tf_data_service_address: null
     tf_data_service_job_name: null
     tfds_as_supervised: false
@@ -105,13 +105,13 @@ task:
     global_batch_size: 2  #
     image_field_key: image/encoded
     input_path: ''  ###
-    input_size: [20, 320, 256]  #
+    input_size: [80, 192, 160]  #
     is_training: false
     # jsn_path: ''  ###
     label_dtype: float32
     label_field_key: image/class/label
-    num_channels: 2  #
-    num_classes: 3  #
+    num_channels: 1  #
+    num_classes: 2  #
     output_size: []
     # plans_file: ''  ###
     seed: null
@@ -153,7 +153,7 @@ trainer:
         clipvalue: null
         decay: 0.00003
         global_clipnorm: null
-        momentum: 0.99
+        momentum: 0.95
         name: SGD
         nesterov: true
       type: sgd
