@@ -39,7 +39,7 @@ output = model_fn(input_images)
 from absl import app
 from absl import flags
 
-from official.common import registry_imports  # pylint: disable=unused-import
+from official.projects.volumetric_models import registry_imports  # pylint: disable=unused-import
 from official.core import exp_factory
 from official.modeling import hyperparams
 from official.projects.volumetric_models.serving import semantic_segmentation_3d
@@ -70,24 +70,33 @@ flags.DEFINE_integer(
 flags.DEFINE_string(
     'input_type', 'image_tensor',
     'One of `image_tensor`, `image_bytes`, `tf_example`.')
-flags.DEFINE_list(
+flags.DEFINE_string(
     'input_image_size', None,
     'The comma-separated string of three integers representing the '
     'height, width and depth of the input to the model.')
 flags.DEFINE_integer('num_channels', 1,
                      'The number of channels of input image.')
 
-flags.register_validator(
-    'input_image_size',
-    lambda value: value is not None and len(value) == 3,
-    message='--input_image_size must be comma-separated string of three '
-    'integers representing the height, width and depth of the input to '
-    'the model.')
+# flags.register_validator(
+#     'input_image_size',
+#     lambda value: value is not None and len(value) == 3,
+#     message='--input_image_size must be comma-separated string of three '
+#     'integers representing the height, width and depth of the input to '
+#     'the model.')
 
 
 def main(_):
   flags.mark_flag_as_required('export_dir')
   flags.mark_flag_as_required('checkpoint_path')
+#   print(FLAGS.experiment)
+#   print(FLAGS.export_dir)
+#   print(FLAGS.checkpoint_path)
+#   print(FLAGS.config_file)
+#   print(FLAGS.params_override)
+#   print(FLAGS.batch_size)
+#   print(FLAGS.input_type)
+#   print(FLAGS.input_image_size)
+#   print(FLAGS.num_channels)
 
   params = exp_factory.get_exp_config(FLAGS.experiment)
   for config_file in FLAGS.config_file or []:
@@ -100,7 +109,7 @@ def main(_):
   params.validate()
   params.lock()
 
-  input_image_size = FLAGS.input_image_size
+  input_image_size = [int(x) for x in FLAGS.input_image_size.split(',')]
 
   export_module = semantic_segmentation_3d.SegmentationModule(
       params=params,

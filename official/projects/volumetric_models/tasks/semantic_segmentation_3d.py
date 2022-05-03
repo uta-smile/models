@@ -24,11 +24,13 @@ from official.core import base_task
 from official.core import input_reader
 from official.core import task_factory
 from official.projects.volumetric_models.configs import semantic_segmentation_3d as exp_cfg
-from official.projects.volumetric_models.dataloaders_tf import segmentation_input_3d_t6 as segmentation_input_3d
 from official.projects.volumetric_models.evaluation import segmentation_metrics
 from official.projects.volumetric_models.losses import segmentation_losses
 from official.projects.volumetric_models.modeling import factory
 from official.modeling import tf_utils
+
+# from official.projects.volumetric_models.dataloaders_tf import segmentation_input_3d_t4 as segmentation_input_3d
+from official.projects.volumetric_models.dataloaders_tf import segmentation_input_2d_t4 as segmentation_input_3d
 
 
 @task_factory.register_task_cls(exp_cfg.SemanticSegmentation3DTask)
@@ -134,8 +136,14 @@ class SemanticSegmentation3DTask(base_task.Task):
     Returns:
       The total loss tensor.
     """
-    segmentation_loss_fn = segmentation_losses.SegmentationLossDiceScore(
-        metric_type="smooth")
+    if self.task_config.model.backbone.unet_3d.network_architecture == '3d':
+      segmentation_loss_fn = segmentation_losses.SegmentationLossDiceScore(
+          metric_type="smooth", 
+          axis=(1, 2, 3))  # 3d
+    elif self.task_config.model.backbone.unet_3d.network_architecture == '2d':
+      segmentation_loss_fn = segmentation_losses.SegmentationLossDiceScore(
+          metric_type="smooth", 
+          axis=(0, 1, 2))  # 2d
     dc_loss = segmentation_loss_fn(model_outputs, labels)
 
     ce_loss = tf.keras.losses.categorical_crossentropy(
@@ -165,15 +173,28 @@ class SemanticSegmentation3DTask(base_task.Task):
               name='train_categorical_accuracy', dtype=tf.float32)
       ])
     else:
-      self.metrics = [
-          segmentation_metrics.DiceScore(
-              num_classes=num_classes,
-              metric_type=None,
-              per_class_metric=self.task_config.evaluation
-              .report_per_class_metric,
-              name='val_dice',
-              dtype=tf.float32)
-      ]
+      if self.task_config.model.backbone.unet_3d.network_architecture == '3d':
+        self.metrics = [
+            segmentation_metrics.DiceScore(
+                num_classes=num_classes,
+                metric_type=None,
+                axis=(1, 2, 3),  # 3d
+                per_class_metric=self.task_config.evaluation
+                .report_per_class_metric,
+                name='val_dice',
+                dtype=tf.float32)
+        ]
+      elif self.task_config.model.backbone.unet_3d.network_architecture == '2d':
+        self.metrics = [
+            segmentation_metrics.DiceScore(
+                num_classes=num_classes,
+                metric_type=None,
+                axis=(0, 1, 2),  # 2d
+                per_class_metric=self.task_config.evaluation
+                .report_per_class_metric,
+                name='val_dice',
+                dtype=tf.float32)
+        ]
 
     return metrics
   
@@ -203,16 +224,16 @@ class SemanticSegmentation3DTask(base_task.Task):
     """
     features, labels = inputs
 
-    nan_features = tf.math.reduce_any(tf.math.is_nan(features))
+    # nan_features = tf.math.reduce_any(tf.math.is_nan(features))
     # if nan_features:
-    if tf.equal(nan_features, tf.constant(True)):
-      print("!!! train_step, nan_features,", nan_features)
-    nan_labels = tf.math.reduce_any(tf.math.is_nan(labels))
-    if nan_labels:
-      print("!!! train_step, nan_labels:", nan_labels)
+    # if tf.equal(nan_features, tf.constant(True)):
+    #   print("!!! train_step, nan_features,", nan_features)
+    # nan_labels = tf.math.reduce_any(tf.math.is_nan(labels))
+    # if nan_labels:
+    #   print("!!! train_step, nan_labels:", nan_labels)
 
-    _ = tf.py_function(func=self.check_nan, inp=[features], Tout=tf.float32)
-    _ = tf.py_function(func=self.check_nan, inp=[labels], Tout=tf.float32)
+    # _ = tf.py_function(func=self.check_nan, inp=[features], Tout=tf.float32)
+    # _ = tf.py_function(func=self.check_nan, inp=[labels], Tout=tf.float32)
 
 
     input_partition_dims = self.task_config.train_input_partition_dims
@@ -232,9 +253,9 @@ class SemanticSegmentation3DTask(base_task.Task):
       if self.task_config.model.head.output_logits:
         outputs = tf.nn.softmax(outputs)
 
-      nan_outputs = tf.math.reduce_any(tf.math.is_nan(outputs))
-      if nan_outputs:
-        print("!!! train_step, nan_outputs:", nan_outputs)
+      # nan_outputs = tf.math.reduce_any(tf.math.is_nan(outputs))
+      # if nan_outputs:
+      #   print("!!! train_step, nan_outputs:", nan_outputs)
 
       # Computes per-replica loss.
       loss = self.build_losses(
@@ -285,12 +306,12 @@ class SemanticSegmentation3DTask(base_task.Task):
     """
     features, labels = inputs
 
-    nan_features = tf.math.reduce_any(tf.math.is_nan(features))
-    if nan_features:
-      print("!!! validation_step, nan_features,", nan_features)
-    nan_labels = tf.math.reduce_any(tf.math.is_nan(labels))
-    if nan_labels:
-      print("!!! validation_step, nan_labels:", nan_labels)
+    # nan_features = tf.math.reduce_any(tf.math.is_nan(features))
+    # if nan_features:
+    #   print("!!! validation_step, nan_features,", nan_features)
+    # nan_labels = tf.math.reduce_any(tf.math.is_nan(labels))
+    # if nan_labels:
+    #   print("!!! validation_step, nan_labels:", nan_labels)
 
     input_partition_dims = self.task_config.eval_input_partition_dims
     if input_partition_dims:
@@ -304,9 +325,9 @@ class SemanticSegmentation3DTask(base_task.Task):
     if self.task_config.model.head.output_logits:
       outputs = tf.nn.softmax(outputs)
 
-    nan_outputs = tf.math.reduce_any(tf.math.is_nan(outputs))
-    if nan_outputs:
-      print("!!! validation_step, nan_outputs:", nan_outputs)
+    # nan_outputs = tf.math.reduce_any(tf.math.is_nan(outputs))
+    # if nan_outputs:
+    #   print("!!! validation_step, nan_outputs:", nan_outputs)
 
     loss = self.build_losses(
         model_outputs=outputs, labels=labels, aux_losses=model.losses)

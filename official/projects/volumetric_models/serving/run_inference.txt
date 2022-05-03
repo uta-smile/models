@@ -1,0 +1,1 @@
+CUDA_VISIBLE_DEVICES=1 nnUNet_predict -i $nnUNet_raw_data_base/nnUNet_raw_data/Task004_Hippocampus/imagesTs/ -o OUTPUT_DIRECTORY_3D -t 4 --save_npz -m 3d_fullres

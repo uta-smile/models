@@ -36,10 +36,10 @@ class UNet3D(tf.keras.Model):
 
   def __init__(
       self,
-      model_id: int,
+      task_id: int = 0,
+      network_architecture: str = '3d',
+      model_depth: int = 4,
       input_specs: layers = layers.InputSpec(shape=[None, None, None, None, 3]),
-      pool_size: Sequence[int] = (2, 2, 2),
-      kernel_size: Sequence[int] = (3, 3, 3),
       base_filters: int = 32,
       kernel_regularizer: tf.keras.regularizers.Regularizer = None,
       activation: str = 'relu',
@@ -74,8 +74,9 @@ class UNet3D(tf.keras.Model):
         convolution and before activation. Default to False.
       **kwargs: Keyword arguments to be passed.
     """
-
-    self._model_id = model_id
+    self._task_id = task_id
+    self._network_architecture = network_architecture
+    self._model_depth = model_depth
     self._input_specs = input_specs
     self._activation = activation
     self._base_filters = base_filters
@@ -89,27 +90,47 @@ class UNet3D(tf.keras.Model):
     self._kernel_regularizer = kernel_regularizer
     self._use_batch_normalization = use_batch_normalization
 
-    if pool_size == 1:
-      self._pool_size = [(2, 2, 2), (2, 2, 2), (2, 2, 2), (2, 2, 2), (2, 2, 2)]
-      self._kernel_size = [(3, 3, 3), (3, 3, 3), (3, 3, 3), (3, 3, 3), (3, 3, 3), (3, 3, 3)]
-    elif pool_size == 2:
-      self._pool_size = [(2, 2, 2), (2, 2, 2), (2, 2, 2), (2, 2, 2), (1, 2, 2)]
-      self._kernel_size = [(3, 3, 3), (3, 3, 3), (3, 3, 3), (3, 3, 3), (3, 3, 3), (3, 3, 3)]
-    elif pool_size == 3:
-      self._pool_size = [(2, 2, 2), (2, 2, 2), (2, 2, 2), (2, 2, 2), (2, 2, 2)]
-      self._kernel_size = [(3, 3, 3), (3, 3, 3), (3, 3, 3), (3, 3, 3), (3, 3, 3), (3, 3, 3)]
-    elif pool_size == 4:
-      self._pool_size = [(2, 2, 2), (2, 2, 2), (2, 2, 2)]
-      self._kernel_size = [(3, 3, 3), (3, 3, 3), (3, 3, 3), (3, 3, 3)]
-    elif pool_size == 5:
-      self._pool_size = [(1, 2, 2), (1, 2, 2), (2, 2, 2), (2, 2, 2), (1, 2, 2), (1, 2, 2)]
-      self._kernel_size = [(1, 3, 3), (1, 3, 3), (3, 3, 3), (3, 3, 3), (3, 3, 3), (3, 3, 3), (3, 3, 3)]
-    elif pool_size == 6:
-      self._pool_size = [(2, 2, 2), (2, 2, 2), (2, 2, 2), (2, 2, 2), (1, 2, 2)]
-      self._kernel_size = [(3, 3, 3), (3, 3, 3), (3, 3, 3), (3, 3, 3), (3, 3, 3), (3, 3, 3)]
-    elif pool_size == 7:
-      self._pool_size = [(1, 2, 2), (2, 2, 2), (2, 2, 2), (2, 2, 2), (1, 2, 2)]
-      self._kernel_size = [(1, 3, 3), (3, 3, 3), (3, 3, 3), (3, 3, 3), (3, 3, 3), (3, 3, 3)]
+    if network_architecture == '3d':
+      POOL_SPECS = {
+        1: [(2, 2, 2), (2, 2, 2), (2, 2, 2), (2, 2, 2), (2, 2, 2)],
+        2: [(2, 2, 2), (2, 2, 2), (2, 2, 2), (2, 2, 2), (1, 2, 2)],
+        3: [(2, 2, 2), (2, 2, 2), (2, 2, 2), (2, 2, 2), (2, 2, 2)],
+        4: [(2, 2, 2), (2, 2, 2), (2, 2, 2)],
+        5: [(1, 2, 2), (1, 2, 2), (2, 2, 2), (2, 2, 2), (1, 2, 2), (1, 2, 2)],
+        6: [(2, 2, 2), (2, 2, 2), (2, 2, 2), (2, 2, 2), (1, 2, 2)],
+        7: [(1, 2, 2), (2, 2, 2), (2, 2, 2), (2, 2, 2), (1, 2, 2)],
+      }
+      KERNEL_SPECS = {
+        1: [(3, 3, 3), (3, 3, 3), (3, 3, 3), (3, 3, 3), (3, 3, 3), (3, 3, 3)],
+        2: [(3, 3, 3), (3, 3, 3), (3, 3, 3), (3, 3, 3), (3, 3, 3), (3, 3, 3)],
+        3: [(3, 3, 3), (3, 3, 3), (3, 3, 3), (3, 3, 3), (3, 3, 3), (3, 3, 3)],
+        4: [(3, 3, 3), (3, 3, 3), (3, 3, 3), (3, 3, 3)],
+        5: [(1, 3, 3), (1, 3, 3), (3, 3, 3), (3, 3, 3), (3, 3, 3), (3, 3, 3), (3, 3, 3)],
+        6: [(3, 3, 3), (3, 3, 3), (3, 3, 3), (3, 3, 3), (3, 3, 3), (3, 3, 3)],
+        7: [(1, 3, 3), (3, 3, 3), (3, 3, 3), (3, 3, 3), (3, 3, 3), (3, 3, 3)],
+      }
+    elif network_architecture == '2d':
+      POOL_SPECS = {
+        1: [(2, 2), (2, 2), (2, 2), (2, 2), (2, 2)],
+        2: [(2, 2), (2, 2), (2, 2), (2, 2), (2, 2), (2, 1)],
+        3: [(2, 2), (2, 2), (2, 2), (2, 2), (2, 2), (2, 2), (2, 2)],
+        4: [(2, 2), (2, 2), (2, 2)],
+        5: [(2, 2), (2, 2), (2, 2), (2, 2), (2, 2), (2, 2)],
+        6: [(2, 2), (2, 2), (2, 2), (2, 2), (2, 2), (2, 2), (2, 2)],
+        7: [(2, 2), (2, 2), (2, 2), (2, 2), (2, 2), (2, 2), (2, 2)],
+      }
+      KERNEL_SPECS = {
+        1: [(3, 3), (3, 3), (3, 3), (3, 3), (3, 3), (3, 3)],
+        2: [(3, 3), (3, 3), (3, 3), (3, 3), (3, 3), (3, 3), (3, 3)],
+        3: [(3, 3), (3, 3), (3, 3), (3, 3), (3, 3), (3, 3), (3, 3), (3, 3)],
+        4: [(3, 3), (3, 3), (3, 3), (3, 3)],
+        5: [(3, 3), (3, 3), (3, 3), (3, 3), (3, 3), (3, 3), (3, 3)],
+        6: [(3, 3), (3, 3), (3, 3), (3, 3), (3, 3), (3, 3), (3, 3), (3, 3)],
+        7: [(3, 3), (3, 3), (3, 3), (3, 3), (3, 3), (3, 3), (3, 3), (3, 3)],
+      }
+
+    self._pool_size = POOL_SPECS[task_id]
+    self._kernel_size = KERNEL_SPECS[task_id]
 
     # Build 3D UNet.
     inputs = tf.keras.Input(
@@ -118,31 +139,54 @@ class UNet3D(tf.keras.Model):
     endpoints = {}
 
     # Add levels with max pooling to downsample input.
-    for layer_depth in range(model_id):
+    for layer_depth in range(model_depth):
       # Two convoluions are applied sequentially without downsampling.
       filter_num = base_filters * (2**layer_depth)
       if filter_num > 320:
           filter_num = 320
-      x2 = nn_blocks_3d.BasicBlock3DVolume(
-          filters=[filter_num, filter_num],
-          strides=(1, 1, 1),
-          kernel_size=self._kernel_size[layer_depth],
-          kernel_regularizer=self._kernel_regularizer,
-          activation=self._activation,
-          use_sync_bn=self._use_sync_bn,
-          norm_momentum=self._norm_momentum,
-          norm_epsilon=self._norm_epsilon,
-          use_batch_normalization=self._use_batch_normalization)(
-              x)
-      if layer_depth < model_id - 1:
-        x = layers.MaxPool3D(
-            pool_size=self._pool_size[layer_depth],
-            padding='valid',
-            data_format=tf.keras.backend.image_data_format())(
-                x2)
-      else:
-        x = x2
-      endpoints[str(layer_depth + 1)] = x2
+      if network_architecture == '3d':
+        x2 = nn_blocks_3d.BasicBlock3DVolume(
+            filters=[filter_num, filter_num],
+            strides=(1, 1, 1),
+            kernel_size=self._kernel_size[layer_depth],
+            kernel_regularizer=self._kernel_regularizer,
+            activation=self._activation,
+            use_sync_bn=self._use_sync_bn,
+            norm_momentum=self._norm_momentum,
+            norm_epsilon=self._norm_epsilon,
+            use_batch_normalization=self._use_batch_normalization)(
+                x)
+        if layer_depth < model_depth - 1:
+          x = layers.MaxPool3D(
+              pool_size=self._pool_size[layer_depth],
+              padding='valid',
+              data_format=tf.keras.backend.image_data_format())(
+                  x2)
+        else:
+          x = x2
+        endpoints[str(layer_depth + 1)] = x2
+      
+      elif network_architecture == '2d':
+        x2 = nn_blocks_3d.BasicBlock2DVolume(
+            filters=[filter_num, filter_num],
+            strides=1,
+            kernel_size=self._kernel_size[layer_depth],
+            kernel_regularizer=self._kernel_regularizer,
+            activation=self._activation,
+            use_sync_bn=self._use_sync_bn,
+            norm_momentum=self._norm_momentum,
+            norm_epsilon=self._norm_epsilon,
+            use_batch_normalization=self._use_batch_normalization)(
+                x)
+        if layer_depth < model_depth - 1:
+          x = layers.MaxPool2D(
+              pool_size=self._pool_size[layer_depth],
+              padding='valid',
+              data_format=tf.keras.backend.image_data_format())(
+                  x2)
+        else:
+          x = x2
+        endpoints[str(layer_depth + 1)] = x2
 
     self._output_specs = {l: endpoints[l].get_shape() for l in endpoints}
 
@@ -150,9 +194,9 @@ class UNet3D(tf.keras.Model):
 
   def get_config(self) -> Mapping[str, Any]:
     return {
-        'model_id': self._model_id,
-        'pool_size': self._pool_size,
-        'kernel_size': self._kernel_size,
+        'task_id': self._task_id,
+        'network_architecture': self._network_architecture,
+        'model_depth': self._model_depth,
         'activation': self._activation,
         'base_filters': self._base_filters,
         'norm_momentum': self._norm_momentum,
@@ -185,9 +229,10 @@ def build_unet3d(
                                       f'{backbone_type}')
 
   return UNet3D(
-      model_id=backbone_cfg.model_id,
       input_specs=input_specs,
-      pool_size=backbone_cfg.pool_size,
+      task_id=backbone_cfg.task_id,
+      network_architecture=backbone_cfg.network_architecture,
+      model_depth=backbone_cfg.model_depth,
       base_filters=backbone_cfg.base_filters,
       kernel_regularizer=l2_regularizer,
       activation=norm_activation_config.activation,
@@ -195,3 +240,4 @@ def build_unet3d(
       norm_epsilon=norm_activation_config.norm_epsilon,
       use_sync_bn=norm_activation_config.use_sync_bn,
       use_batch_normalization=backbone_cfg.use_batch_normalization)
+

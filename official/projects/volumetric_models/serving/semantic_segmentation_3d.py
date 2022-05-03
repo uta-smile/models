@@ -15,6 +15,7 @@
 """3D semantic segmentation input and model functions for serving/inference."""
 
 from typing import Mapping
+# from typing import Dict, Mapping, Text
 
 import tensorflow as tf
 
@@ -23,6 +24,7 @@ from official.projects.volumetric_models.modeling import backbones
 from official.projects.volumetric_models.modeling import decoders
 from official.projects.volumetric_models.modeling import factory
 from official.vision.beta.serving import export_base
+# from official.projects.volumetric_models.serving import export_base
 
 
 class SegmentationModule(export_base.ExportModule):

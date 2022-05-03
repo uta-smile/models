@@ -30,22 +30,23 @@ task:
     backbone:
       type: unet_3d
       unet_3d:
+        task_id: 4
+        network_architecture: 3d
+        model_depth: 4
         base_filters: 32
-        kernel_size: 4  # task id
-        model_id: 4  # model depth
-        pool_size: 4  # task id
         use_batch_normalization: true
     decoder:
       type: unet_3d_decoder
       unet_3d_decoder:
-        kernel_size: 4  # task id
-        model_id: 4  # model depth
-        pool_size: 4  # task id
+        task_id: 4
+        network_architecture: 3d
+        model_depth: 4
         use_batch_normalization: true
         use_deconvolution: true
     head:
       level: 1
       num_classes: 3  #
+      network_architecture: 3d
       num_convs: 0
       num_filters: 256
       output_logits: true
@@ -75,13 +76,11 @@ task:
     input_path: ''  ###
     input_size: [40, 56, 40]  #
     is_training: true
-    # jsn_path: ''  ###
     label_dtype: float32
     label_field_key: image/class/label
     num_channels: 1  #
     num_classes: 3  #
     output_size: []
-    # plans_file: ''  ###
     seed: null
     sharding: true
     shuffle_buffer_size: 100
@@ -107,13 +106,11 @@ task:
     input_path: ''  ###
     input_size: [40, 56, 40]  #
     is_training: false
-    # jsn_path: ''  ###
     label_dtype: float32
     label_field_key: image/class/label
     num_channels: 1  #
     num_classes: 3  #
     output_size: []
-    # plans_file: ''  ###
     seed: null
     sharding: true
     shuffle_buffer_size: 1000
