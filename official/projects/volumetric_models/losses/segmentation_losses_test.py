@@ -27,8 +27,8 @@ class SegmentationLossDiceScoreTest(parameterized.TestCase, tf.test.TestCase):
   def test_supported_loss(self, metric_type, output, expected_score):
     loss = segmentation_losses.SegmentationLossDiceScore(
         metric_type=metric_type)
-    logits = tf.constant(output, shape=[2, 128, 128, 128, 1], dtype=tf.float32)
-    labels = tf.ones(shape=[2, 128, 128, 128, 1], dtype=tf.float32)
+    logits = tf.constant(output, shape=[2, 128, 128, 128, 3], dtype=tf.float32)
+    labels = tf.ones(shape=[2, 128, 128, 128, 3], dtype=tf.float32)
     actual_score = loss(logits=logits, labels=labels)
     self.assertAlmostEqual(actual_score.numpy(), expected_score, places=1)
 

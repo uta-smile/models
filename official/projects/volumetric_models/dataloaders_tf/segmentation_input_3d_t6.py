@@ -20,14 +20,6 @@ from official.vision.beta.dataloaders import decoder
 from official.vision.beta.dataloaders import parser
 import numpy as np
 
-# from official.projects.volumetric_models.data_augmentations.dataset_loading import DataLoader3D
-# from official.projects.volumetric_models.data_augmentations.spatial_transforms import SpatialTransform, MirrorTransform
-# from official.projects.volumetric_models.data_augmentations.noise_transforms import GaussianNoiseTransform, GaussianBlurTransform
-# from official.projects.volumetric_models.data_augmentations.color_transforms import BrightnessMultiplicativeTransform, ContrastAugmentationTransform, GammaTransform
-# from official.projects.volumetric_models.data_augmentations.resample_transforms import SimulateLowResolutionTransform
-# from official.projects.volumetric_models.data_augmentations.custom_transforms import MaskTransform
-# from official.projects.volumetric_models.data_augmentations.utility_transforms import RemoveLabelTransform
-
 from official.projects.volumetric_models.data_augmentations_tf.tfda_3d.transforms.spatial_transforms import SpatialTransform, MirrorTransform, SpatialTransform2D
 from official.projects.volumetric_models.data_augmentations_tf.tfda_3d.transforms.noise_transforms import GaussianNoiseTransform, GaussianBlurTransform
 from official.projects.volumetric_models.data_augmentations_tf.tfda_3d.transforms.color_transforms import BrightnessMultiplicativeTransform, ContrastAugmentationTransform, GammaTransform

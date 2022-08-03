@@ -29,8 +29,11 @@ from official.projects.volumetric_models.losses import segmentation_losses
 from official.projects.volumetric_models.modeling import factory
 from official.modeling import tf_utils
 
-# from official.projects.volumetric_models.dataloaders_tf import segmentation_input_3d_t4 as segmentation_input_3d
-from official.projects.volumetric_models.dataloaders_tf import segmentation_input_2d_t4 as segmentation_input_3d
+# from official.projects.volumetric_models.dataloaders import segmentation_input_3d_t6 as segmentation_input_3d
+# from official.projects.volumetric_models.dataloaders_tf import segmentation_input_3d_t6 as segmentation_input_3d
+# from official.projects.volumetric_models.dataloaders_tf import segmentation_input_2d_t4 as segmentation_input_3d
+from official.projects.volumetric_models.dataloaders_tf import segmentation_input_3d_t4 as segmentation_input_3d
+
 
 
 @task_factory.register_task_cls(exp_cfg.SemanticSegmentation3DTask)
@@ -119,8 +122,9 @@ class SemanticSegmentation3DTask(base_task.Task):
         parser_fn=parser.parse_fn(params.is_training))
 
     dataset = reader.read(input_context=input_context)
-
+    
     return dataset
+
 
   def build_losses(self,
                    labels: tf.Tensor,
@@ -143,8 +147,9 @@ class SemanticSegmentation3DTask(base_task.Task):
     elif self.task_config.model.backbone.unet_3d.network_architecture == '2d':
       segmentation_loss_fn = segmentation_losses.SegmentationLossDiceScore(
           metric_type="smooth", 
-          axis=(0, 1, 2))  # 2d
-    dc_loss = segmentation_loss_fn(model_outputs, labels)
+          axis=(0, 1, 2))  # TODO
+
+    dc_loss = segmentation_loss_fn(model_outputs[:,:,:,:,1:], labels[:,:,:,:,1:])
 
     ce_loss = tf.keras.losses.categorical_crossentropy(
         labels,
@@ -159,8 +164,7 @@ class SemanticSegmentation3DTask(base_task.Task):
       total_loss += tf.add_n(aux_losses)
 
     return total_loss
-    # return dc_loss
-    # return ce_loss
+
 
   def build_metrics(self,
                     training: bool = True) -> Sequence[tf.keras.metrics.Metric]:
@@ -189,7 +193,7 @@ class SemanticSegmentation3DTask(base_task.Task):
             segmentation_metrics.DiceScore(
                 num_classes=num_classes,
                 metric_type=None,
-                axis=(0, 1, 2),  # 2d
+                axis=(0, 1, 2),  # TODO
                 per_class_metric=self.task_config.evaluation
                 .report_per_class_metric,
                 name='val_dice',
@@ -197,12 +201,7 @@ class SemanticSegmentation3DTask(base_task.Task):
         ]
 
     return metrics
-  
-  def check_nan(self, inp):
-    inp = inp.numpy()
-    import numpy as np
-    print(np.isnan(inp).any())
-    return inp
+
  
   def train_step(
       self,
@@ -224,18 +223,6 @@ class SemanticSegmentation3DTask(base_task.Task):
     """
     features, labels = inputs
 
-    # nan_features = tf.math.reduce_any(tf.math.is_nan(features))
-    # if nan_features:
-    # if tf.equal(nan_features, tf.constant(True)):
-    #   print("!!! train_step, nan_features,", nan_features)
-    # nan_labels = tf.math.reduce_any(tf.math.is_nan(labels))
-    # if nan_labels:
-    #   print("!!! train_step, nan_labels:", nan_labels)
-
-    # _ = tf.py_function(func=self.check_nan, inp=[features], Tout=tf.float32)
-    # _ = tf.py_function(func=self.check_nan, inp=[labels], Tout=tf.float32)
-
-
     input_partition_dims = self.task_config.train_input_partition_dims
     if input_partition_dims:
       strategy = tf.distribute.get_strategy()
@@ -243,6 +230,8 @@ class SemanticSegmentation3DTask(base_task.Task):
           features, input_partition_dims)
 
     num_replicas = tf.distribute.get_strategy().num_replicas_in_sync
+
+
     with tf.GradientTape() as tape:
       outputs = model(features, training=True)
       # Casting output layer as float32 is necessary when mixed_precision is
@@ -253,9 +242,6 @@ class SemanticSegmentation3DTask(base_task.Task):
       if self.task_config.model.head.output_logits:
         outputs = tf.nn.softmax(outputs)
 
-      # nan_outputs = tf.math.reduce_any(tf.math.is_nan(outputs))
-      # if nan_outputs:
-      #   print("!!! train_step, nan_outputs:", nan_outputs)
 
       # Computes per-replica loss.
       loss = self.build_losses(
@@ -288,6 +274,7 @@ class SemanticSegmentation3DTask(base_task.Task):
 
     return logs
 
+
   def validation_step(
       self,
       inputs,
@@ -306,13 +293,6 @@ class SemanticSegmentation3DTask(base_task.Task):
     """
     features, labels = inputs
 
-    # nan_features = tf.math.reduce_any(tf.math.is_nan(features))
-    # if nan_features:
-    #   print("!!! validation_step, nan_features,", nan_features)
-    # nan_labels = tf.math.reduce_any(tf.math.is_nan(labels))
-    # if nan_labels:
-    #   print("!!! validation_step, nan_labels:", nan_labels)
-
     input_partition_dims = self.task_config.eval_input_partition_dims
     if input_partition_dims:
       strategy = tf.distribute.get_strategy()
@@ -324,10 +304,6 @@ class SemanticSegmentation3DTask(base_task.Task):
     outputs = outputs['logits']
     if self.task_config.model.head.output_logits:
       outputs = tf.nn.softmax(outputs)
-
-    # nan_outputs = tf.math.reduce_any(tf.math.is_nan(outputs))
-    # if nan_outputs:
-    #   print("!!! validation_step, nan_outputs:", nan_outputs)
 
     loss = self.build_losses(
         model_outputs=outputs, labels=labels, aux_losses=model.losses)
@@ -341,9 +317,11 @@ class SemanticSegmentation3DTask(base_task.Task):
 
     return logs
 
+
   def inference_step(self, inputs, model: tf.keras.Model) -> tf.Tensor:
     """Performs the forward step."""
     return model(inputs, training=False)
+
 
   def aggregate_logs(
       self,
@@ -382,6 +360,7 @@ class SemanticSegmentation3DTask(base_task.Task):
       predictions = tf.cast(predictions, tf.float32)
       metric.update_state(labels, predictions)
     return state
+
 
   def reduce_aggregated_logs(
       self,

@@ -30,17 +30,17 @@ task:
     backbone:
       type: unet_3d
       unet_3d:
+        task_id: 6
+        network_architecture: 3d
+        model_depth: 6
         base_filters: 32
-        kernel_size: 6  # task id
-        model_id: 6  # model depth
-        pool_size: 6  # task id
         use_batch_normalization: true
     decoder:
       type: unet_3d_decoder
       unet_3d_decoder:
-        kernel_size: 6  # task id
-        model_id: 6  # model depth
-        pool_size: 6  # task id
+        task_id: 6
+        network_architecture: 3d
+        model_depth: 6
         use_batch_normalization: true
         use_deconvolution: true
     head:
